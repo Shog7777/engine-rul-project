@@ -28,6 +28,7 @@ project/
 ├── Helper/             # helper.py: functions shared by notebooks and app
 ├── Images/             # plots saved by the notebooks
 ├── Presentation/       # PowerPoint presentation
+├── webapp/             # Bonus: FastAPI backend + space-themed web interface
 ├── main.py             # Streamlit application
 ├── requirements.txt    # Python libraries with exact versions
 ├── .gitignore
@@ -92,6 +93,16 @@ Open the local URL shown in the terminal (usually http://localhost:8501). In the
 2. start from the last observed cycle of any NASA test engine (true RUL shown), edit the readings, and press **Predict RUL**;
 3. see the prediction of all four models side by side, with a chart;
 4. open the **Model comparison** tab for the MAE / RMSE / R² table and plots.
+
+## Bonus: FastAPI Web App
+
+Besides the required Streamlit app, `webapp/` contains a web version of the same predictor: a **FastAPI** backend that loads the saved models, and a custom HTML/CSS/JavaScript interface with a night-sky theme. It uses the same files in `Models/`, so run the notebooks first.
+
+```bash
+python -m uvicorn webapp.server:app
+```
+
+Open http://127.0.0.1:8000. The interface has a gauge with the predicted remaining life, a side-by-side bar chart of the four models (with NASA's true RUL marked), editable sensor readings and the test-set metrics. The API is documented automatically at http://127.0.0.1:8000/docs (`GET /api/meta`, `GET /api/engines`, `POST /api/predict`).
 
 ## Work Summary
 

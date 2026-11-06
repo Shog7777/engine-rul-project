@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Engine Observatory</title>
+  <meta name="description" content="Estimate the remaining useful life of an aircraft engine with four regression models.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <canvas id="sky" aria-hidden="true"></canvas>
+
+  <main class="page">
+    <header class="top">
+      <span class="brand">Engine Observatory</span>
+      <span class="top-note">NASA C-MAPSS FD001, simulated engines</span>
+    </header>
+
+    <section class="hero" aria-labelledby="headline">
+      <div class="hero-copy">
+        <h1 id="headline">How much life is left in this engine?</h1>
+        <p class="lead">Choose one of the 100 NASA test engines. Four regression models read its sensors and estimate the operating cycles remaining before failure.</p>
+
+        <div class="controls">
+          <label for="engine">Test engine</label>
+          <div class="select-wrap">
+            <select id="engine" aria-describedby="engine-hint"></select>
+          </div>
+          <p id="engine-hint" class="hint">Its last observed cycle is loaded, along with the true remaining life NASA recorded.</p>
+        </div>
+
+        <fieldset class="models" aria-label="Model shown in the gauge">
+          <legend>Model shown in the gauge</legend>
+          <div id="model-chips" class="chips"></div>
+        </fieldset>
+      </div>
+
+      <div class="gauge-wrap">
+        <svg id="gauge" viewBox="0 0 460 460" role="img" aria-labelledby="gauge-title gauge-desc">
+          <title id="gauge-title">Predicted remaining useful life</title>
+          <desc id="gauge-desc">A gold arc around a ring shows the predicted cycles remaining.</desc>
+          <defs>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="5" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <radialGradient id="planet" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stop-color="#fff6d6"/>
+              <stop offset="0.45" stop-color="#ffd36b"/>
+              <stop offset="1" stop-color="#ffd36b" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <g id="dial-ticks"></g>
+          <circle class="track" cx="230" cy="230" r="170"/>
+          <circle id="arc" class="arc" cx="230" cy="230" r="170" filter="url(#glow)"/>
+          <g id="true-marker" class="true-marker" opacity="0">
+            <path d="M0,-9 L7,0 L0,9 L-7,0 Z"/>
+          </g>
+          <circle id="head" class="head" r="22" cx="230" cy="60" fill="url(#planet)" opacity="0"/>
+        </svg>
+        <div class="readout" aria-live="polite">
+          <div id="rul" class="rul">–</div>
+          <div class="unit">cycles left</div>
+          <div id="compare" class="compare">&nbsp;</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-models">
+      <h2 id="h-models">All four models on this engine</h2>
+      <div id="bars" class="bars"></div>
+      <p class="legend"><span class="key-dot"></span> Model estimate <span class="key-diamond"></span> True remaining life (NASA)</p>
+    </section>
+
+    <section class="panel">
+      <details id="readings">
+        <summary>Edit the sensor readings</summary>
+        <p class="hint">Change any value, then estimate again. The models were trained on 18 inputs: the cycle count, two operating settings and 15 sensors.</p>
+        <form id="form" class="grid"></form>
+        <button id="predict" class="btn" type="submit" form="form">Estimate remaining life</button>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="h-perf">
+      <h2 id="h-perf">How accurate are the models?</h2>
+      <p class="hint">Official NASA test set, 100 engines. MAE and RMSE are errors in cycles, so lower is better. R² is higher-is-better.</p>
+      <div class="table-scroll">
+        <table id="perf">
+          <thead><tr><th>Model</th><th>MAE</th><th>RMSE</th><th>R²</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="foot">
+      Educational prototype built on simulated data. Estimates are not maintenance instructions.
+    </footer>
+  </main>
+
+  <script src="/assets/stars.js"></script>
+  <script src="/assets/app.js"></script>
+</body>
+</html>
