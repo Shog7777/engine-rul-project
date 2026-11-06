@@ -161,9 +161,11 @@
     const err = pred.map((p, i) => Math.abs(p - trueShown[i]));
     const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
     const q = Math.max(1, Math.floor(err.length / 4));
+    const pl = (n) => `${n} cycle${n === 1 ? "" : "s"}`;
+    const m = (a) => Math.round(mean(a));
     $("journey-text").textContent =
-      `${state.selected} on engine ${state.engineId}: on average ${mean(err).toFixed(0)} cycles away from the truth (capped at 125, like the training target) across ${err.length} observed cycles. ` +
-      `In the first quarter of the history it is ${mean(err.slice(0, q)).toFixed(0)} cycles off; in the last quarter, ${mean(err.slice(-q)).toFixed(0)}.`;
+      `${state.selected} on engine ${state.engineId}: on average ${pl(m(err))} away from the truth (capped at 125, like the training target) across ${err.length} observed cycles. ` +
+      `In the first quarter of the history it is ${pl(m(err.slice(0, q)))} off; in the last quarter, ${pl(m(err.slice(-q)))}.`;
   }
 
   /* ---------- sensor signals ---------- */
