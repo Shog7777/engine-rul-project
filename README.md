@@ -102,7 +102,7 @@ Besides the required Streamlit app, `webapp/` contains a web version of the same
 python -m uvicorn webapp.server:app
 ```
 
-Open http://127.0.0.1:8000. The interface has a gauge with the predicted remaining life, a side-by-side bar chart of the four models (with NASA's true RUL marked), editable sensor readings and the test-set metrics. The API is documented automatically at http://127.0.0.1:8000/docs (`GET /api/meta`, `GET /api/engines`, `POST /api/predict`).
+Open http://127.0.0.1:8000. The interface has a gauge with the predicted remaining life, moon phases that show where the engine is in its life, a chart of how each model's estimate evolves over the engine's observed cycles, sensor trends, a side-by-side bar chart of the four models (with NASA's true RUL marked), feature importance, dataset facts, editable sensor readings and the test-set metrics. The API is documented automatically at http://127.0.0.1:8000/docs (`GET /api/meta`, `GET /api/engines`, `GET /api/trajectory/{engine_id}`, `GET /api/importance`, `GET /api/dataset`, `POST /api/predict`).
 
 ## Work Summary
 

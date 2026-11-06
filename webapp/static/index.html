@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
+  <div class="nebula" aria-hidden="true"></div>
+  <canvas id="planet" aria-hidden="true"></canvas>
   <canvas id="sky" aria-hidden="true"></canvas>
 
   <main class="page">
@@ -47,7 +49,7 @@
               <feGaussianBlur stdDeviation="5" result="b"/>
               <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
-            <radialGradient id="planet" cx="50%" cy="50%" r="50%">
+            <radialGradient id="planet-glow" cx="50%" cy="50%" r="50%">
               <stop offset="0" stop-color="#fff6d6"/>
               <stop offset="0.45" stop-color="#ffd36b"/>
               <stop offset="1" stop-color="#ffd36b" stop-opacity="0"/>
@@ -59,7 +61,7 @@
           <g id="true-marker" class="true-marker" opacity="0">
             <path d="M0,-9 L7,0 L0,9 L-7,0 Z"/>
           </g>
-          <circle id="head" class="head" r="22" cx="230" cy="60" fill="url(#planet)" opacity="0"/>
+          <circle id="head" class="head" r="22" cx="230" cy="60" fill="url(#planet-glow)" opacity="0"/>
         </svg>
         <div class="readout" aria-live="polite">
           <div id="rul" class="rul">–</div>
@@ -69,10 +71,41 @@
       </div>
     </section>
 
+    <section class="panel phases" aria-labelledby="h-phase">
+      <h2 id="h-phase">Where this engine is in its life</h2>
+      <p id="phase-text" class="phase-text"></p>
+      <div id="moons" class="moons"></div>
+      <p class="hint">Eight phases from a full moon (healthy) to a new moon (end of life), based on the estimate in the gauge. The thresholds are illustrative, not NASA limits.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-journey">
+      <h2 id="h-journey">How the estimate changes as the engine ages</h2>
+      <p id="journey-text" class="hint journey-text"></p>
+      <div class="chart-wrap"><svg id="journey" viewBox="0 0 1000 340" role="img" aria-label="True and predicted remaining life for every observed cycle"></svg></div>
+      <p class="legend"><span class="key-line gold"></span> Model estimate <span class="key-line dash"></span> True remaining life (NASA)</p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-signals">
+      <h2 id="h-signals">Signals from this engine</h2>
+      <p class="hint">The four sensors that move most clearly with wear, from the first to the last observed cycle.</p>
+      <div id="signals" class="signals"></div>
+    </section>
+
     <section class="panel" aria-labelledby="h-models">
       <h2 id="h-models">All four models on this engine</h2>
       <div id="bars" class="bars"></div>
       <p class="legend"><span class="key-dot"></span> Model estimate <span class="key-diamond"></span> True remaining life (NASA)</p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-look">
+      <h2 id="h-look">What the models look at</h2>
+      <p class="hint">Share of the decision each input gets in the tuned Gradient Boosting model. The operating cycle dominates; the sensors refine the estimate.</p>
+      <div id="importance" class="importance"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-data">
+      <h2 id="h-data">The data behind it</h2>
+      <dl id="facts" class="facts"></dl>
     </section>
 
     <section class="panel">

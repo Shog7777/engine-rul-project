@@ -3,18 +3,34 @@
   const R = 170, CX = 230, CY = 230, CIRC = 2 * Math.PI * R;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  const NAMES = {
+    cycle: "Operating cycle", setting_1: "Operating setting 1", setting_2: "Operating setting 2",
+    sensor_2: "LPC outlet temperature", sensor_3: "HPC outlet temperature", sensor_4: "LPT outlet temperature",
+    sensor_6: "Bypass duct pressure", sensor_7: "HPC outlet pressure", sensor_8: "Fan speed",
+    sensor_9: "Core speed", sensor_11: "HPC outlet static pressure", sensor_12: "Fuel flow ratio",
+    sensor_13: "Corrected fan speed", sensor_14: "Corrected core speed", sensor_15: "Bypass ratio",
+    sensor_17: "Bleed enthalpy", sensor_20: "HPT coolant bleed", sensor_21: "LPT coolant bleed",
+  };
+  const friendly = (f) => NAMES[f] || f;
+
+  const PHASES = [
+    { lit: 1.0, name: "Healthy" }, { lit: 0.85, name: "Strong" }, { lit: 0.65, name: "Aging" },
+    { lit: 0.5, name: "Halfway" }, { lit: 0.35, name: "Wearing" }, { lit: 0.2, name: "Watch closely" },
+    { lit: 0.08, name: "Service soon" }, { lit: 0.0, name: "End of life" },
+  ];
+  const phaseOf = (rul) => Math.min(7, Math.max(0, Math.floor((1 - Math.min(rul, MAX_RUL) / MAX_RUL) * 8)));
+
   const $ = (id) => document.getElementById(id);
   const state = { features: [], models: [], engines: [], results: [], selected: "Gradient Boosting",
-                  predictions: null, trueRul: null };
+                  predictions: null, trueRul: null, engineId: null, trajectory: null };
 
-  // ---------- gauge ----------
+  /* ---------- gauge ---------- */
   function polar(value) {
     const angle = (Math.min(value, MAX_RUL) / MAX_RUL) * 2 * Math.PI - Math.PI / 2;
     return { x: CX + R * Math.cos(angle), y: CY + R * Math.sin(angle) };
   }
 
   function drawDial() {
-    const g = $("dial-ticks");
     let html = "";
     for (let v = 0; v < MAX_RUL; v += 10) {
       const major = v % 50 === 0;
@@ -26,7 +42,7 @@
         html += `<text class="tick-label" x="${CX + rl * Math.cos(a)}" y="${CY + rl * Math.sin(a)}">${v}</text>`;
       }
     }
-    g.innerHTML = html;
+    $("dial-ticks").innerHTML = html;
   }
 
   let rafId;
@@ -58,12 +74,11 @@
 
     if (state.trueRul != null) {
       const t = polar(state.trueRul);
-      marker.setAttribute("transform", `translate(${t.x} ${t.y}) rotate(0)`);
+      marker.setAttribute("transform", `translate(${t.x} ${t.y})`);
       marker.setAttribute("opacity", 1);
     } else {
       marker.setAttribute("opacity", 0);
     }
-
     animateNumber($("rul"), value);
 
     if (state.trueRul != null) {
@@ -76,7 +91,107 @@
     }
   }
 
-  // ---------- model bars ----------
+  /* ---------- moon phases ---------- */
+  function moonSvg(lit, uid) {
+    const r = 44, c = 50, rx = r * Math.abs(2 * lit - 1);
+    const half = `M ${c} ${c - r} A ${r} ${r} 0 0 1 ${c} ${c + r} Z`;
+    const ell = `<ellipse cx="${c}" cy="${c}" rx="${rx}" ry="${r}" fill="${lit >= 0.5 ? "#fff" : "#000"}"/>`;
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">
+      <defs><mask id="mm-${uid}"><rect width="100" height="100" fill="#000"/><path d="${half}" fill="#fff"/>${ell}</mask></defs>
+      <circle cx="${c}" cy="${c}" r="${r}" fill="#0a0a12" stroke="rgba(245,196,81,0.28)" stroke-width="0.8"/>
+      <g transform="translate(100 0) scale(-1 1)"><g mask="url(#mm-${uid})">
+        <circle cx="${c}" cy="${c}" r="${r}" fill="url(#gold-disc)" filter="url(#glitter)"/>
+      </g></g></svg>`;
+  }
+
+  function installSvgDefs() {
+    const holder = document.createElement("div");
+    holder.setAttribute("aria-hidden", "true");
+    holder.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
+    holder.innerHTML = `<svg width="0" height="0"><defs>
+      <radialGradient id="gold-disc" cx="38%" cy="35%" r="75%">
+        <stop offset="0" stop-color="#ffe9a8"/><stop offset="0.55" stop-color="#d9a441"/><stop offset="1" stop-color="#7a5514"/>
+      </radialGradient>
+      <filter id="glitter" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="4" result="n"/>
+        <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 0.92  0 0 0 0 0.6  0 0 0 2.2 -0.95" result="sp"/>
+        <feComposite in="sp" in2="SourceGraphic" operator="in" result="spk"/>
+        <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="spk"/></feMerge>
+      </filter></defs></svg>`;
+    document.body.prepend(holder);
+  }
+
+  function renderPhases() {
+    const value = Math.max(0, state.predictions[state.selected]);
+    const now = phaseOf(value);
+    $("moons").innerHTML = PHASES.map((p, i) =>
+      `<div class="moon${i === now ? " is-now" : ""}"${i === now ? ' aria-current="true"' : ""}>${moonSvg(p.lit, i)}<span>${p.name}</span></div>`).join("");
+    let text = `${state.selected} puts this engine in the “${PHASES[now].name}” phase with ${Math.round(value)} cycles left.`;
+    if (state.trueRul != null) {
+      const real = phaseOf(state.trueRul);
+      text += real === now ? ` NASA’s true value agrees.`
+        : ` NASA’s true value, ${state.trueRul} cycles, is “${PHASES[real].name}”.`;
+    }
+    $("phase-text").textContent = text;
+  }
+
+  /* ---------- journey chart ---------- */
+  function renderJourney() {
+    const t = state.trajectory;
+    if (!t) return;
+    const pred = t.predictions[state.selected];
+    const W = 1000, H = 340, L = 52, Rr = 18, T = 16, B = 36;
+    const yMax = Math.ceil(Math.max(...t.true_rul, ...pred) / 50) * 50;
+    const xMax = t.cycles[t.cycles.length - 1];
+    const sx = (c) => L + ((c - 1) / Math.max(1, xMax - 1)) * (W - L - Rr);
+    const sy = (v) => T + (1 - Math.max(0, v) / yMax) * (H - T - B);
+    const path = (arr) => arr.map((v, i) => `${sx(t.cycles[i]).toFixed(1)},${sy(v).toFixed(1)}`).join(" ");
+
+    let grid = "";
+    for (let v = 0; v <= yMax; v += 50) {
+      grid += `<line class="grid-line" x1="${L}" x2="${W - Rr}" y1="${sy(v)}" y2="${sy(v)}"/>
+               <text class="axis-label" x="${L - 10}" y="${sy(v) + 4}" text-anchor="end">${v}</text>`;
+    }
+    const step = Math.max(10, Math.ceil(xMax / 8 / 10) * 10);
+    for (let c = step; c <= xMax; c += step) {
+      grid += `<text class="axis-label" x="${sx(c)}" y="${H - 12}" text-anchor="middle">${c}</text>`;
+    }
+    grid += `<text class="axis-label" x="${(L + W - Rr) / 2}" y="${H}" text-anchor="middle" dy="-0">cycle</text>`;
+
+    const lx = sx(xMax), ly = sy(pred[pred.length - 1]);
+    $("journey").innerHTML = `${grid}
+      <polyline class="line-true" points="${path(t.true_rul)}"/>
+      <polyline class="line-pred" points="${path(pred)}"/>
+      <circle cx="${lx}" cy="${ly}" r="14" fill="url(#planet-glow)"/>
+      <circle cx="${lx}" cy="${ly}" r="3.2" fill="#fff8dd"/>`;
+
+    const err = pred.map((p, i) => Math.abs(p - t.true_rul[i]));
+    const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+    const q = Math.max(1, Math.floor(err.length / 4));
+    $("journey-text").textContent =
+      `${state.selected} on engine ${state.engineId}: on average ${mean(err).toFixed(0)} cycles away from the truth across ${err.length} observed cycles. ` +
+      `In the first quarter of the history it is ${mean(err.slice(0, q)).toFixed(0)} cycles off; in the last quarter, ${mean(err.slice(-q)).toFixed(0)}.`;
+  }
+
+  /* ---------- sensor signals ---------- */
+  function renderSignals() {
+    const t = state.trajectory;
+    if (!t) return;
+    $("signals").innerHTML = Object.entries(t.sensors).map(([name, vals]) => {
+      const lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
+      const pts = vals.map((v, i) => `${(i / Math.max(1, vals.length - 1) * 200).toFixed(1)},${(52 - ((v - lo) / span) * 48 - 2).toFixed(1)}`).join(" ");
+      const k = Math.max(1, Math.min(5, Math.floor(vals.length / 4)));
+      const first = vals.slice(0, k).reduce((a, b) => a + b, 0) / k;
+      const last = vals.slice(-k).reduce((a, b) => a + b, 0) / k;
+      const pct = ((last - first) / Math.abs(first)) * 100;
+      const dir = Math.abs(pct) < 0.05 ? "barely moved" : pct > 0 ? `rose ${pct.toFixed(1)}%` : `fell ${(-pct).toFixed(1)}%`;
+      return `<div class="signal"><b>${friendly(name)}</b><small>${name}</small>
+        <svg viewBox="0 0 200 52" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}"/></svg>
+        <span class="delta">${dir} over the observed cycles</span></div>`;
+    }).join("");
+  }
+
+  /* ---------- model bars ---------- */
   function renderBars() {
     const preds = state.predictions;
     const max = Math.max(MAX_RUL * 0.5, ...Object.values(preds), state.trueRul || 0) * 1.1;
@@ -88,7 +203,7 @@
       return `<div class="bar-row${sel}">
         <div class="bar-name">${name}</div>
         <div class="bar-track"><div class="bar-fill" data-w="${(v / max) * 100}"></div>${tr}</div>
-        <div class="bar-value">${v.toFixed(1)}</div></div>`;
+        <div class="bar-value" title="${preds[name] < 0 ? "Negative: impossible, the model extrapolated below zero" : ""}">${preds[name].toFixed(1)}</div></div>`;
     }).join("");
     requestAnimationFrame(() => requestAnimationFrame(() => {
       document.querySelectorAll(".bar-fill").forEach((b) => (b.style.transform = `scaleX(${b.dataset.w / 100})`));
@@ -101,11 +216,35 @@
   }
 
   function renderResults() {
-    renderGauge();
-    renderBars();
+    renderGauge(); renderPhases(); renderBars(); renderJourney();
   }
 
-  // ---------- data ----------
+  /* ---------- static sections ---------- */
+  function renderImportance(rows) {
+    const top = rows.slice(0, 8);
+    $("importance").innerHTML = top.map((r) =>
+      `<div class="imp-row"><div class="imp-name">${friendly(r.feature)}<small>${r.feature}</small></div>
+       <div class="imp-track"><div class="imp-fill" data-w="${r.importance / top[0].importance}"></div></div>
+       <div class="imp-val">${(r.importance * 100).toFixed(1)}%</div></div>`).join("");
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.querySelectorAll(".imp-fill").forEach((b) => (b.style.transform = `scaleX(${b.dataset.w})`));
+    }));
+  }
+
+  function renderFacts(d) {
+    const items = [
+      ["Engines in the training data", d.engines],
+      ["Sensor readings", d.readings.toLocaleString("en-US")],
+      ["Median engine life", `${d.median_life} cycles`],
+      ["Shortest and longest life", `${d.shortest_life} to ${d.longest_life}`],
+      ["Inputs per model", d.features],
+    ];
+    $("facts").innerHTML = items.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+  }
+
+  /* ---------- data flow ---------- */
+  const fetchJson = (url) => fetch(url).then((r) => { if (!r.ok) throw new Error(url); return r.json(); });
+
   function readInputs() {
     const f = {};
     state.features.forEach((name) => (f[name] = parseFloat($("in-" + name).value)));
@@ -126,41 +265,46 @@
     renderResults();
   }
 
-  function loadEngine(id) {
+  async function loadEngine(id) {
     const engine = state.engines.find((e) => e.engine_id === Number(id));
+    state.engineId = engine.engine_id;
     state.features.forEach((name) => ($("in-" + name).value = engine.features[name]));
     state.trueRul = engine.true_rul;
-    return predict();
+    state.trajectory = null;
+    const trajectory = fetchJson(`/api/trajectory/${engine.engine_id}`).then((t) => (state.trajectory = t)).catch(() => null);
+    await predict();
+    await trajectory;
+    renderJourney(); renderSignals();
   }
 
   function buildForm() {
     $("form").innerHTML = state.features.map((name) =>
-      `<div class="field"><label for="in-${name}">${name}</label>
+      `<div class="field"><label for="in-${name}" title="${friendly(name)}">${name}</label>
        <input id="in-${name}" type="number" step="any" inputmode="decimal" required></div>`).join("");
   }
 
   function buildTable() {
     const best = state.results.reduce((a, b) => (a.RMSE < b.RMSE ? a : b)).Model;
-    $("perf").querySelector("tbody").innerHTML = state.results.map((r) =>
-      `<tr><td>${r.Model}</td><td class="${r.Model === best ? "best" : ""}">${r.MAE.toFixed(2)}</td>
-       <td class="${r.Model === best ? "best" : ""}">${r.RMSE.toFixed(2)}</td>
-       <td class="${r.Model === best ? "best" : ""}">${r["R²"].toFixed(3)}</td></tr>`).join("");
+    $("perf").querySelector("tbody").innerHTML = state.results.map((r) => {
+      const c = r.Model === best ? ' class="best"' : "";
+      return `<tr><td>${r.Model}</td><td${c}>${r.MAE.toFixed(2)}</td><td${c}>${r.RMSE.toFixed(2)}</td><td${c}>${r["R²"].toFixed(3)}</td></tr>`;
+    }).join("");
   }
 
   async function init() {
+    installSvgDefs();
     drawDial();
     try {
-      const [meta, engines] = await Promise.all([
-        fetch("/api/meta").then((r) => r.json()), fetch("/api/engines").then((r) => r.json()),
-      ]);
+      const [meta, engines] = await Promise.all([fetchJson("/api/meta"), fetchJson("/api/engines")]);
       Object.assign(state, { features: meta.features, models: meta.models, results: meta.results, engines });
     } catch (e) {
       $("compare").textContent = "The API is not running. Start it with: python -m uvicorn webapp.server:app";
       return;
     }
-    const engines = state.engines;
-    $("engine").innerHTML = engines.map((e) => `<option value="${e.engine_id}">Engine ${e.engine_id}</option>`).join("");
+    $("engine").innerHTML = state.engines.map((e) => `<option value="${e.engine_id}">Engine ${e.engine_id}</option>`).join("");
     buildForm(); renderChips(); buildTable();
+    fetchJson("/api/importance").then(renderImportance).catch(() => {});
+    fetchJson("/api/dataset").then(renderFacts).catch(() => {});
 
     $("engine").addEventListener("change", (e) => loadEngine(e.target.value));
     $("model-chips").addEventListener("click", (e) => {
@@ -171,7 +315,10 @@
     });
     $("form").addEventListener("submit", (e) => { e.preventDefault(); predict(); });
 
-    loadEngine(engines[0].engine_id);
+    // start with the engine that has the longest observed history: the richest charts
+    const start = state.engines.reduce((a, b) => (b.features.cycle > a.features.cycle ? b : a));
+    $("engine").value = start.engine_id;
+    loadEngine(start.engine_id);
   }
 
   init();
