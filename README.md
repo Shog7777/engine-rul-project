@@ -111,6 +111,7 @@ Open http://127.0.0.1:8000. The interface has an instrument-style gauge (teal, o
 ```bash
 python -m pip install -r requirements-dev.txt
 python -m pytest -q
+python -m ruff check .
 ```
 
 The 14 tests check the data and the cleaned file, the target definition, the saved models and their metrics, and every endpoint of the web API.
