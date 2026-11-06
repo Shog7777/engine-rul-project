@@ -98,13 +98,13 @@ Open the local URL shown in the terminal (usually http://localhost:8501). In the
 
 ## Bonus: FastAPI Web App
 
-Besides the required Streamlit app, `webapp/` contains a web version of the same predictor: a **FastAPI** backend that loads the saved models, and a custom HTML/CSS/JavaScript interface styled like a glass-cockpit engine display. It uses the same files in `Models/`, so run the notebooks first.
+Besides the required Streamlit app, `webapp/` contains a web version of the same predictor: a **FastAPI** backend that loads the saved models, and a custom HTML/CSS/JavaScript interface styled as an engineering drawing on a sunrise sky, with circling aircraft, rockets, birds and a ground scene with sports cars. It uses the same files in `Models/`, so run the notebooks first.
 
 ```bash
 python -m uvicorn webapp.server:app
 ```
 
-Open http://127.0.0.1:8000. The interface has an instrument-style gauge (green, amber and red bands) with the predicted remaining life, an engine life-stage panel, a chart of how each model's estimate evolves over the engine's observed cycles, sensor trends, a side-by-side bar chart of the four models (with NASA's true RUL marked), feature importance, dataset facts, editable sensor readings and the test-set metrics. The API is documented automatically at http://127.0.0.1:8000/docs (`GET /api/meta`, `GET /api/engines`, `GET /api/trajectory/{engine_id}`, `GET /api/importance`, `GET /api/dataset`, `POST /api/predict`).
+Open http://127.0.0.1:8000. The interface has an instrument-style gauge (teal, orange and red bands), a simplified turbofan section with the sensor positions marked, aircraft line drawings with the predicted remaining life, an engine life-stage panel, a chart of how each model's estimate evolves over the engine's observed cycles, sensor trends, a side-by-side bar chart of the four models (with NASA's true RUL marked), feature importance, dataset facts, editable sensor readings and the test-set metrics. The API is documented automatically at http://127.0.0.1:8000/docs (`GET /api/meta`, `GET /api/engines`, `GET /api/trajectory/{engine_id}`, `GET /api/importance`, `GET /api/dataset`, `POST /api/predict`).
 
 ## Run the Tests
 
