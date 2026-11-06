@@ -28,9 +28,11 @@ project/
 ├── Helper/             # helper.py: functions shared by notebooks and app
 ├── Images/             # plots saved by the notebooks
 ├── Presentation/       # PowerPoint presentation
-├── webapp/             # Bonus: FastAPI backend, space-themed web interface, MCP agent tools
+├── webapp/             # Bonus: FastAPI backend and cockpit-style web interface
 ├── main.py             # Streamlit application
 ├── requirements.txt    # Python libraries with exact versions
+├── requirements-dev.txt  # test libraries
+├── tests/              # automated checks (pytest)
 ├── .gitignore
 └── README.md
 ```
@@ -96,23 +98,22 @@ Open the local URL shown in the terminal (usually http://localhost:8501). In the
 
 ## Bonus: FastAPI Web App
 
-Besides the required Streamlit app, `webapp/` contains a web version of the same predictor: a **FastAPI** backend that loads the saved models, and a custom HTML/CSS/JavaScript interface with a night-sky theme. It uses the same files in `Models/`, so run the notebooks first.
+Besides the required Streamlit app, `webapp/` contains a web version of the same predictor: a **FastAPI** backend that loads the saved models, and a custom HTML/CSS/JavaScript interface styled like a glass-cockpit engine display. It uses the same files in `Models/`, so run the notebooks first.
 
 ```bash
 python -m uvicorn webapp.server:app
 ```
 
-Open http://127.0.0.1:8000. The interface has a gauge with the predicted remaining life, moon phases that show where the engine is in its life, a chart of how each model's estimate evolves over the engine's observed cycles, sensor trends, a side-by-side bar chart of the four models (with NASA's true RUL marked), feature importance, dataset facts, editable sensor readings and the test-set metrics. The API is documented automatically at http://127.0.0.1:8000/docs (`GET /api/meta`, `GET /api/engines`, `GET /api/trajectory/{engine_id}`, `GET /api/importance`, `GET /api/dataset`, `POST /api/predict`).
+Open http://127.0.0.1:8000. The interface has an instrument-style gauge (green, amber and red bands) with the predicted remaining life, an engine life-stage panel, a chart of how each model's estimate evolves over the engine's observed cycles, sensor trends, a side-by-side bar chart of the four models (with NASA's true RUL marked), feature importance, dataset facts, editable sensor readings and the test-set metrics. The API is documented automatically at http://127.0.0.1:8000/docs (`GET /api/meta`, `GET /api/engines`, `GET /api/trajectory/{engine_id}`, `GET /api/importance`, `GET /api/dataset`, `POST /api/predict`).
 
-### AI agent integration (MCP)
-
-The models are also wrapped as **tools for LLM agents**. The web page has a "Let an AI agent run it" section with a demo agent, and `webapp/mcp_server.py` is a real [Model Context Protocol](https://modelcontextprotocol.io) server that agents such as Claude Code, Codex or Gemini CLI can connect to:
+## Run the Tests
 
 ```bash
-claude mcp add engine-rul -- python -m webapp.mcp_server
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
 ```
 
-Available tools: `list_engines`, `predict_rul`, `compare_models`, `maintenance_brief`. The same tool definitions are served as JSON at `GET /api/agent/tools`, and `POST /api/agent/call` runs a tool over HTTP. In the web demo the tool calls and numbers are real, while the agent's wording is a template (no LLM runs inside the page). The `maintenance_brief` thresholds (30 and 80 cycles) are illustrative, not NASA limits.
+The 14 tests check the data and the cleaned file, the target definition, the saved models and their metrics, and every endpoint of the web API.
 
 ## Work Summary
 

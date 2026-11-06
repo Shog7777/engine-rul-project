@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from webapp import agent_tools
+from webapp.data import load_state
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 SPARK_SENSORS = ["sensor_11", "sensor_4", "sensor_12", "sensor_7"]
@@ -23,21 +23,16 @@ state = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load the saved pipelines and the example engines once at start-up."""
-    state.update(agent_tools.get_state())
+    state.update(load_state())
     yield
     state.clear()
 
 
-app = FastAPI(title="Engine RUL API", version="1.1", lifespan=lifespan)
+app = FastAPI(title="Engine RUL API", version="1.2", lifespan=lifespan)
 
 
 class PredictRequest(BaseModel):
     features: dict[str, float]
-
-
-class ToolCall(BaseModel):
-    name: str
-    arguments: dict = {}
 
 
 @app.get("/api/meta")
@@ -85,19 +80,6 @@ def trajectory(engine_id: int):
         "predictions": {n: m.predict(frame).tolist() for n, m in state["models"].items()},
         "sensors": {s: rows[s].tolist() for s in SPARK_SENSORS},
     }
-
-
-@app.get("/api/agent/tools")
-def agent_tools_list():
-    """Tool definitions (JSON Schema) that an LLM agent can call."""
-    return agent_tools.TOOL_SCHEMAS
-
-
-@app.post("/api/agent/call")
-def agent_call(call: ToolCall):
-    """Run one tool the way an agent's tool runner would."""
-    return {"tool": call.name, "arguments": call.arguments,
-            "result": agent_tools.call_tool(call.name, call.arguments)}
 
 
 @app.post("/api/predict")
