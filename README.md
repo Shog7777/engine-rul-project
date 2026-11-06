@@ -27,7 +27,7 @@ project/
 ├── Models/             # 4 saved pipelines (.joblib), feature_columns.json, result tables
 ├── Helper/             # helper.py: functions shared by notebooks and app
 ├── Images/             # plots saved by the notebooks
-├── Presentation/       # PowerPoint presentation
+├── Presentation/       # Engine-RUL-Presentation.pptx (10 slides with speaker notes)
 ├── webapp/             # Bonus: FastAPI backend and cockpit-style web interface
 ├── main.py             # Streamlit application
 ├── requirements.txt    # Python libraries with exact versions
