@@ -141,7 +141,7 @@ h2 { margin: 0 0 1rem; font: 600 1.7rem/1.1 var(--display); letter-spacing: 0.01
 .imp-val { text-align: right; font: 400 0.85rem var(--mono); color: var(--muted); }
 
 .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 1.25rem; margin: 0; }
-.facts div { border-left: 2px solid var(--cyan); padding-left: 0.9rem; }
+.facts div { border-top: 1px solid var(--line-hi); padding-top: 0.7rem; }
 .facts dt { color: var(--muted); font-size: 0.8rem; }
 .facts dd { margin: 0; font: 700 1.7rem/1.15 var(--mono); color: #fff; }
 
