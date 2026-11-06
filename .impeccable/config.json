@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "webapp/static/index.html"
+        ],
+        "createdAt": "2026-11-06T21:16:13.877Z",
+        "reason": "false positive: index.html holds no styles; type scale lives in style.css where h1 is clamp(2.4rem,5vw,3.9rem) vs 1rem body (about 3.9x) and the gauge number is up to 7.5rem"
+      }
+    ]
+  }
+}

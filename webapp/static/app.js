@@ -91,7 +91,7 @@
         <div class="bar-value">${v.toFixed(1)}</div></div>`;
     }).join("");
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      document.querySelectorAll(".bar-fill").forEach((b) => (b.style.width = b.dataset.w + "%"));
+      document.querySelectorAll(".bar-fill").forEach((b) => (b.style.transform = `scaleX(${b.dataset.w / 100})`));
     }));
   }
 

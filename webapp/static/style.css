@@ -190,10 +190,12 @@ h2 { margin: 0 0 1rem; font: 500 1.8rem/1.15 var(--display); color: #fff; }
 .bar-track { position: relative; height: 12px; background: rgba(160, 178, 230, 0.12); border-radius: 999px; }
 .bar-fill {
   position: absolute; left: 0; top: 0; bottom: 0;
-  width: 0;
+  width: 100%;
   background: linear-gradient(90deg, #8d6b1c, var(--gold));
   border-radius: 999px;
-  transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .bar-row.is-selected .bar-fill { box-shadow: 0 0 14px rgba(245, 196, 81, 0.5); }
 .bar-true {
