@@ -48,6 +48,8 @@
       });
     }
 
+    buildWords();
+
     // Slow comets travelling to the lower left, each with a tail of golden dust.
     comets = [];
     const n = Math.max(4, Math.round(w / 220));
@@ -166,6 +168,51 @@
       ctx.restore();
     }
   }
+
+  /* ---------- AI vocabulary drifting through the sky ---------- */
+  const WORDS = ["Claude", "GPT", "Agent", "LLM", "MCP", "Codex", "Gemini", "Tokens",
+                 "Tools", "Prompt", "Context", "Transformer", "Agent", "LLM", "MCP", "GPT"];
+  let wordStars = [];
+  function buildWords() {
+    wordStars = [];
+    const count = Math.max(8, Math.min(WORDS.length * 2, Math.round((w * h) / 70000)));
+    for (let i = 0; i < count; i++) {
+      const big = Math.random() < 0.28;
+      wordStars.push({
+        text: WORDS[i % WORDS.length],
+        x: Math.random() * w, y: Math.random() * h,
+        size: big ? 24 + Math.random() * 12 : 13 + Math.random() * 7,
+        phase: Math.random() * TAU, speed: 0.3 + Math.random() * 0.6,
+        drift: 0.012 + Math.random() * 0.02,
+        base: big ? 0.38 : 0.24,
+      });
+    }
+  }
+  function drawWords(t) {
+    ctx.textBaseline = "middle";
+    for (const m of wordStars) {
+      if (!reduce) {
+        m.x -= m.drift; m.y += m.drift * 0.3;
+        if (m.x < -160) m.x = w + 80;
+        if (m.y > h + 30) m.y = -30;
+      }
+      const tw = reduce ? 1 : 0.65 + 0.35 * Math.sin(t * m.speed + m.phase);
+      ctx.font = `italic 500 ${m.size}px "Cormorant Garamond", Georgia, serif`;
+      ctx.globalAlpha = m.base * tw;
+      ctx.shadowColor = "rgba(255,214,110,0.85)";
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = "#ffe29a";
+      ctx.fillText(m.text, m.x, m.y);
+      ctx.shadowBlur = 0;
+      // a small star before the word, so each term reads as a star with a name
+      ctx.globalAlpha = Math.min(1, m.base * tw + 0.35);
+      ctx.fillStyle = "#fff4cc";
+      ctx.beginPath();
+      ctx.arc(m.x - 9, m.y, 1.6, 0, TAU);
+      ctx.fill();
+    }
+  }
+
   let agentList = null;
   window.agentIcons.then((list) => { agentList = list; buildAgentStars(list); if (reduce) frame(0); });
 
@@ -232,6 +279,7 @@
       drawStar(s, t);
     }
     drawAgentStars(t);
+    drawWords(t);
     for (let i = 0; i < comets.length; i++) {
       const c = comets[i];
       if (!reduce) {
@@ -250,6 +298,7 @@
 
   seed();
   frame(0);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (reduce) frame(0); });
   if (!reduce) requestAnimationFrame(frame);
 
   let resizeTimer;
