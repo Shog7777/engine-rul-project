@@ -41,9 +41,9 @@
   function drawDial() {
     // colour bands: red 0-30, amber 30-100, green 100-250
     $("bands").innerHTML =
-      `<path class="band" stroke="#ff5d4a" d="${arcPath(0, 30, R)}"/>` +
-      `<path class="band" stroke="#ffb224" d="${arcPath(30, 100, R)}"/>` +
-      `<path class="band" stroke="#46e08c" d="${arcPath(100, MAX_RUL, R)}"/>`;
+      `<path class="band red" d="${arcPath(0, 30, R)}"/>` +
+      `<path class="band amber" d="${arcPath(30, 100, R)}"/>` +
+      `<path class="band green" d="${arcPath(100, MAX_RUL, R)}"/>`;
     let html = "";
     for (let v = 0; v <= MAX_RUL; v += 10) {
       const major = v % 50 === 0, a = angleOf(v);
@@ -152,7 +152,7 @@
     $("journey").innerHTML = `${grid}
       <polyline class="line-true" points="${path(t.true_rul)}"/>
       <polyline class="line-pred" points="${path(pred)}"/>
-      <circle cx="${lx}" cy="${ly}" r="5" fill="#52d5ff"/>`;
+      <circle class="dot-pred" cx="${lx}" cy="${ly}" r="5"/>`;
 
     const err = pred.map((p, i) => Math.abs(p - t.true_rul[i]));
     const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
@@ -230,6 +230,74 @@
     $("facts").innerHTML = items.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
   }
 
+
+  /* ---------- engineering drawing: simplified turbofan section ---------- */
+  function buildEngine() {
+    const lerp = (x, x0, x1, y0, y1) => y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+    const casing = (x) => (x < 180 ? -50 : x < 330 ? lerp(x, 180, 330, -50, -44) : x < 480 ? lerp(x, 330, 480, -44, -31) : x < 580 ? -33 : lerp(x, 580, 770, -33, -46));
+    const hub = (x) => (x < 180 ? -26 : x < 330 ? lerp(x, 180, 330, -26, -22) : x < 480 ? lerp(x, 330, 480, -22, -13) : x < 580 ? -9 : lerp(x, 580, 770, -9, -14));
+    const f = (n) => n.toFixed(1);
+
+    let half = "";
+    // outer nacelle (cowl) and the inner wall of the bypass duct
+    half += `<path class="ln" d="M 78,-46 C 76,-84 122,-100 196,-102 L 610,-102 C 730,-102 810,-80 872,-30"/>`;
+    half += `<path class="ln" d="M 78,-46 C 92,-62 112,-70 142,-72 L 330,-72"/>`;
+    half += `<path class="ln" d="M 330,-44 L 480,-31 L 580,-33 L 770,-46 L 872,-30"/>`;       // core cowl
+    half += `<path class="thin" d="M 330,-72 L 330,-44"/>`;
+    // spinner and fan disc
+    half += `<path class="tint" d="M 78,0 C 90,-14 112,-24 146,-28 L 146,0 Z"/>`;
+    // fan blades
+    for (let i = 0; i < 3; i++) {
+      const x = 152 + i * 7;
+      half += `<path class="tint" d="M ${x},-27 L ${x + 5},-27 L ${x + 11},-93 L ${x + 6},-93 Z"/>`;
+    }
+    // compressor and turbine blades: lines between hub and casing
+    const blade = (x) => `<line class="thin" x1="${x}" y1="${f(hub(x))}" x2="${x}" y2="${f(casing(x))}"/>`;
+    for (let x = 196; x <= 322; x += 14) half += blade(x);                     // LPC
+    for (let x = 342; x <= 472; x += 10) half += blade(x);                     // HPC
+    for (let x = 592; x <= 612; x += 20) half += blade(x);                     // HPT
+    for (let x = 650; x <= 746; x += 24) half += blade(x);                     // LPT
+    // hub line along the core
+    half += `<path class="ln" d="M 146,-26 L 330,-22 L 480,-13 L 580,-9 L 770,-14 L 872,-6"/>`;
+    // combustor and fuel injectors
+    half += `<path class="tint" d="M 486,-12 L 486,-32 C 520,-40 556,-40 576,-34 L 576,-10 C 556,-4 520,-4 486,-12 Z"/>`;
+    for (let x = 500; x <= 556; x += 18) half += `<circle class="fuel" cx="${x}" cy="-22" r="4"/>`;
+    // nozzle plug
+    half += `<path class="tint" d="M 790,-8 L 872,-6 L 872,0 L 790,0 Z"/>`;
+    half += `<path class="tint" d="M 772,-12 C 800,-12 830,-9 872,0 L 772,0 Z" opacity="0.0"/>`;
+
+    // airflow in the bypass duct
+    const flow = (y) => `<path class="flow" d="M 345,${y} L 640,${y} C 720,${y} 800,${y + 8} 880,${y + 20}"/>`;
+
+    // sensor markers: [sensor number, x of station on the casing, marker x, marker y, highlighted]
+    const markers = [
+      [2, 325, 325, -86, false], [3, 470, 446, -70, false], [11, 470, 470, -86, true],
+      [7, 470, 494, -70, true], [12, 530, 540, -86, true], [4, 748, 748, -86, true],
+    ];
+    let mk = "";
+    markers.forEach(([n, sx, mx, my, on]) => {
+      const sy = casing(sx);
+      mk += `<g class="mk${on ? " on" : ""}"><line class="mk-leader" x1="${mx}" y1="${my + 8}" x2="${sx}" y2="${sy}"/>
+        <circle cx="${sx}" cy="${sy}" r="2.6"/><circle cx="${mx}" cy="${my}" r="9"/><text x="${mx}" y="${my}">${n}</text></g>`;
+    });
+
+    // component labels along the bottom
+    const labels = [["Fan", 168], ["LPC", 260], ["HPC", 405], ["Combustor", 531], ["HPT", 602], ["LPT", 698], ["Nozzle", 830]];
+    let lab = "";
+    labels.forEach(([t, x]) => {
+      lab += `<line class="leader" x1="${x}" y1="${f(-hub(x) + 10)}" x2="${x}" y2="100"/><text class="label" x="${x}" y="116">${t}</text>`;
+    });
+
+    $("engine-drawing").insertAdjacentHTML("beforeend", `
+      <line class="center" x1="40" y1="165" x2="900" y2="165"/>
+      <g transform="translate(0 165)">${half}${flow(-54)}${mk}</g>
+      <g transform="translate(0 165) scale(1 -1)">${half}</g>
+      <g transform="translate(0 165)">${lab}</g>
+      <line class="dim" x1="78" y1="304" x2="872" y2="304"/>
+      <line class="dim" x1="78" y1="298" x2="78" y2="310"/><line class="dim" x1="872" y1="298" x2="872" y2="310"/>
+      <text class="dim-text" x="475" y="322">Air flows from left to right. Simplified, not to scale.</text>`);
+  }
+
   /* ---------- data flow ---------- */
   const fetchJson = (url) => fetch(url).then((r) => { if (!r.ok) throw new Error(url); return r.json(); });
 
@@ -287,6 +355,7 @@
 
   async function init() {
     drawDial();
+    buildEngine();
     try {
       const [meta, engines] = await Promise.all([fetchJson("/api/meta"), fetchJson("/api/engines")]);
       Object.assign(state, { features: meta.features, models: meta.models, results: meta.results, engines });
@@ -296,6 +365,9 @@
     }
     $("engine").innerHTML = state.engines.map((e) => `<option value="${e.engine_id}">Engine ${e.engine_id}</option>`).join("");
     buildForm(); renderChips(); buildTable();
+    const best = state.results.reduce((a, b) => (a.RMSE < b.RMSE ? a : b));
+    $("tb-model").textContent = best.Model;
+    $("tb-mae").textContent = `${best.MAE.toFixed(2)} cycles`;
     fetchJson("/api/importance").then(renderImportance).catch(() => {});
     fetchJson("/api/dataset").then(renderFacts).catch(() => {});
 

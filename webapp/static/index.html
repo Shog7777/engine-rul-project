@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Engine Health Monitor</title>
   <meta name="description" content="Estimate the remaining useful life of an aircraft turbofan engine from its sensor readings, with four regression models.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23081014%27 stroke=%27%2352d5ff%27 stroke-width=%272%27/%3E%3Cpath d=%27M16 16 L16 5%27 stroke=%27%2346e08c%27 stroke-width=%273%27 stroke-linecap=%27round%27 transform=%27rotate(50 16 16)%27/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27white%27 stroke=%27%2312263f%27 stroke-width=%272%27/%3E%3Cpath d=%27M16 16 L16 5%27 stroke=%27%23d9480f%27 stroke-width=%273%27 stroke-linecap=%27round%27 transform=%27rotate(50 16 16)%27/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=B612:wght@400;700&family=B612+Mono:wght@400;700&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">
@@ -59,6 +59,21 @@
           <div id="compare" class="compare">&nbsp;</div>
         </div>
       </div>
+    </section>
+
+    <section class="panel drawing" aria-labelledby="h-engine">
+      <h2 id="h-engine">Where the sensors sit on the engine</h2>
+      <p class="hint">A simplified section of a two-spool turbofan, drawn to show the engine parts the data comes from. The orange numbers are NASA sensor numbers.</p>
+      <div class="drawing-wrap" tabindex="0" role="region" aria-label="Engine drawing, scrolls sideways on small screens"><svg id="engine-drawing" viewBox="0 0 920 330" role="img" aria-labelledby="engine-title"><title id="engine-title">Simplified section of a turbofan engine with six sensor positions marked</title></svg></div>
+      <ul class="sensor-key">
+        <li><b>2</b> LPC outlet temperature</li>
+        <li><b>3</b> HPC outlet temperature</li>
+        <li><b>4</b> LPT outlet temperature</li>
+        <li><b>7</b> HPC outlet pressure</li>
+        <li><b>11</b> HPC outlet static pressure</li>
+        <li><b>12</b> Fuel flow ratio</li>
+      </ul>
+      <p class="hint">Fan, LPC and HPC are the fan and the low- and high-pressure compressors. HPT and LPT are the high- and low-pressure turbines.</p>
     </section>
 
     <section class="panel" aria-labelledby="h-stage">
@@ -118,8 +133,13 @@
       </div>
     </section>
 
-    <footer class="foot">
-      Educational prototype built on simulated data. Estimates are not maintenance instructions.
+    <footer class="titleblock" aria-label="Project summary">
+      <div><span>Project</span>Engine remaining useful life</div>
+      <div><span>Dataset</span>NASA C-MAPSS FD001</div>
+      <div><span>Target</span>RUL in operating cycles</div>
+      <div><span>Selected model</span><b id="tb-model">–</b></div>
+      <div><span>Test error (MAE)</span><b id="tb-mae">–</b></div>
+      <div class="tb-wide"><span>Note</span>Educational prototype built on simulated data. Estimates are not maintenance instructions.</div>
     </footer>
   </main>
 
