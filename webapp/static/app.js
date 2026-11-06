@@ -1,5 +1,6 @@
 (() => {
-  const MAX_RUL = 250;                      // the dial shows 0 to 250 cycles
+  const MAX_RUL = 150;                      // the dial shows 0 to 150 cycles
+  const CAP = 125;                          // the models are trained on min(RUL, 125)
   const CX = 230, CY = 230, R = 170;
   const START = -225, SWEEP = 270;          // degrees: dial opens at the bottom, like an engine gauge
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -19,12 +20,12 @@
     { name: "Halfway", tone: "amber" }, { name: "Wearing", tone: "amber" }, { name: "Watch closely", tone: "amber" },
     { name: "Service soon", tone: "red" }, { name: "End of life", tone: "red" },
   ];
-  const stageOf = (rul) => Math.min(7, Math.max(0, Math.floor((1 - Math.min(Math.max(rul, 0), MAX_RUL) / MAX_RUL) * 8)));
+  const stageOf = (rul) => Math.min(7, Math.max(0, Math.floor((1 - Math.min(Math.max(rul, 0), CAP) / CAP) * 8)));
 
   const $ = (id) => document.getElementById(id);
   const state = { features: [], models: [], engines: [], results: [], selected: "Gradient Boosting",
                   predictions: null, trueRul: null, engineId: null, trajectory: null,
-                  base: null, engineTrue: null, edited: false };
+                  base: null, engineTrue: null, edited: false, outside: [] };
 
   /* ---------- dial ---------- */
   const angleOf = (v) => START + (Math.min(Math.max(v, 0), MAX_RUL) / MAX_RUL) * SWEEP;   // degrees
@@ -39,14 +40,14 @@
   }
 
   function drawDial() {
-    // colour bands: red 0-30, amber 30-100, green 100-250
+    // colour bands: red 0-30, orange 30-80, teal 80-150
     $("bands").innerHTML =
       `<path class="band red" d="${arcPath(0, 30, R)}"/>` +
-      `<path class="band amber" d="${arcPath(30, 100, R)}"/>` +
-      `<path class="band green" d="${arcPath(100, MAX_RUL, R)}"/>`;
+      `<path class="band amber" d="${arcPath(30, 80, R)}"/>` +
+      `<path class="band green" d="${arcPath(80, MAX_RUL, R)}"/>`;
     let html = "";
-    for (let v = 0; v <= MAX_RUL; v += 10) {
-      const major = v % 50 === 0, a = angleOf(v);
+    for (let v = 0; v <= MAX_RUL; v += 5) {
+      const major = v % 25 === 0, a = angleOf(v);
       const p1 = pt(a, R + 12), p2 = pt(a, R + (major ? 28 : 20));
       html += `<line class="tick${major ? " major" : ""}" x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}"/>`;
       if (major) {
@@ -99,6 +100,7 @@
       bug.setAttribute("opacity", 0);
     }
     animateNumber($("rul"), value);
+    $("unit").textContent = value >= CAP - 5 ? "cycles left (125 or more)" : "cycles left";
 
     if (state.trueRul != null) {
       const diff = value - state.trueRul;
@@ -106,7 +108,8 @@
         : diff > 0 ? `${diff.toFixed(0)} cycles too optimistic` : `${(-diff).toFixed(0)} cycles too cautious`;
       $("compare").innerHTML = `NASA recorded <b>${state.trueRul}</b> cycles, ${word}`;
     } else {
-      $("compare").innerHTML = state.edited ? "Edited readings, so there is no NASA value to compare" : "&nbsp;";
+      const far = state.outside.length ? ` Some readings (${state.outside.slice(0, 3).join(", ")}${state.outside.length > 3 ? "…" : ""}) are outside the range seen in training, so treat the estimate with caution.` : "";
+      $("compare").innerHTML = state.edited ? "Edited readings, so there is no NASA value to compare." + far : "&nbsp;";
     }
   }
 
@@ -130,15 +133,16 @@
     const t = state.trajectory;
     if (!t) return;
     const pred = t.predictions[state.selected];
+    const trueShown = t.true_rul.map((v) => Math.min(v, CAP));
     const W = 1000, H = 340, L = 52, Rr = 18, T = 16, B = 36;
-    const yMax = Math.ceil(Math.max(...t.true_rul, ...pred) / 50) * 50;
+    const yMax = Math.ceil(Math.max(...trueShown, ...pred) / 25) * 25;
     const xMax = t.cycles[t.cycles.length - 1];
     const sx = (c) => L + ((c - 1) / Math.max(1, xMax - 1)) * (W - L - Rr);
     const sy = (v) => T + (1 - Math.max(0, v) / yMax) * (H - T - B);
     const path = (arr) => arr.map((v, i) => `${sx(t.cycles[i]).toFixed(1)},${sy(v).toFixed(1)}`).join(" ");
 
     let grid = "";
-    for (let v = 0; v <= yMax; v += 50) {
+    for (let v = 0; v <= yMax; v += 25) {
       grid += `<line class="grid-line" x1="${L}" x2="${W - Rr}" y1="${sy(v)}" y2="${sy(v)}"/>
                <text class="axis-label" x="${L - 10}" y="${sy(v) + 4}" text-anchor="end">${v}</text>`;
     }
@@ -150,15 +154,15 @@
 
     const lx = sx(xMax), ly = sy(pred[pred.length - 1]);
     $("journey").innerHTML = `${grid}
-      <polyline class="line-true" points="${path(t.true_rul)}"/>
+      <polyline class="line-true" points="${path(trueShown)}"/>
       <polyline class="line-pred" points="${path(pred)}"/>
       <circle class="dot-pred" cx="${lx}" cy="${ly}" r="5"/>`;
 
-    const err = pred.map((p, i) => Math.abs(p - t.true_rul[i]));
+    const err = pred.map((p, i) => Math.abs(p - trueShown[i]));
     const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
     const q = Math.max(1, Math.floor(err.length / 4));
     $("journey-text").textContent =
-      `${state.selected} on engine ${state.engineId}: on average ${mean(err).toFixed(0)} cycles away from the truth across ${err.length} observed cycles. ` +
+      `${state.selected} on engine ${state.engineId}: on average ${mean(err).toFixed(0)} cycles away from the truth (capped at 125, like the training target) across ${err.length} observed cycles. ` +
       `In the first quarter of the history it is ${mean(err.slice(0, q)).toFixed(0)} cycles off; in the last quarter, ${mean(err.slice(-q)).toFixed(0)}.`;
   }
 
@@ -183,12 +187,13 @@
   /* ---------- model bars ---------- */
   function renderBars() {
     const preds = state.predictions;
-    const max = Math.max(MAX_RUL * 0.5, ...Object.values(preds), state.trueRul || 0) * 1.1;
+    const trueShown = state.trueRul == null ? 0 : Math.min(state.trueRul, MAX_RUL);
+    const max = Math.max(MAX_RUL * 0.5, ...Object.values(preds), trueShown) * 1.1;
     $("bars").innerHTML = state.models.map((name) => {
       const v = Math.max(0, preds[name]);
       const sel = name === state.selected ? " is-selected" : "";
       const tr = state.trueRul != null
-        ? `<span class="bar-true" style="left:${Math.min(100, (state.trueRul / max) * 100)}%"></span>` : "";
+        ? `<span class="bar-true" style="left:${Math.min(100, (trueShown / max) * 100)}%" title="NASA recorded ${state.trueRul} cycles"></span>` : "";
       const note = preds[name] < 0 ? "Negative: impossible, the model extrapolated below zero" : "";
       return `<div class="bar-row${sel}">
         <div class="bar-name">${name}</div>
@@ -317,7 +322,9 @@
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ features }),
     });
     if (!res.ok) { $("compare").textContent = "The estimate failed. Check the readings and try again."; return; }
-    state.predictions = (await res.json()).predictions;
+    const body = await res.json();
+    state.predictions = body.predictions;
+    state.outside = body.outside_training_range || [];
     // once the readings differ from the NASA engine, its true RUL no longer applies
     state.edited = !!state.base && state.features.some((n) => Math.abs(features[n] - state.base[n]) > 1e-9);
     state.trueRul = state.edited ? null : state.engineTrue;

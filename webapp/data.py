@@ -21,15 +21,17 @@ def load_state():
     )["RUL"]
     cleaned = pd.read_csv(PROJECT_ROOT / "Data/Cleaned/train_FD001_cleaned.csv")
     lifetimes = cleaned.groupby("engine_id")["cycle"].max()
+    ranges = {f: (float(cleaned[f].min()), float(cleaned[f].max())) for f in features}
     return {
         "models": models,
         "features": features,
         "results": results,
         "test_df": test_df,
+        "ranges": ranges,
         "true_final": {int(i + 1): int(v) for i, v in enumerate(true_rul)},
         "dataset": {
             "engines": int(cleaned["engine_id"].nunique()),
-            "readings": int(len(cleaned)),
+            "readings": len(cleaned),
             "features": len(features),
             "median_life": int(lifetimes.median()),
             "shortest_life": int(lifetimes.min()),

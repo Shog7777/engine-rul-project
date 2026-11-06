@@ -44,7 +44,7 @@
       <div class="gauge-wrap">
         <svg id="gauge" viewBox="0 0 460 460" role="img" aria-labelledby="gauge-title gauge-desc">
           <title id="gauge-title">Predicted remaining useful life</title>
-          <desc id="gauge-desc">An instrument dial from 0 to 250 cycles with green, amber and red bands and a needle at the predicted value.</desc>
+          <desc id="gauge-desc">An instrument dial from 0 to 150 cycles with green, amber and red bands and a needle at the predicted value. The models are trained on remaining life capped at 125 cycles.</desc>
           <g id="fan" class="fan"></g>
           <g id="bands"></g>
           <g id="dial-ticks"></g>
@@ -56,7 +56,7 @@
         </svg>
         <div class="readout" aria-live="polite">
           <div id="rul" class="rul">–</div>
-          <div class="unit">cycles left</div>
+          <div id="unit" class="unit">cycles left</div>
           <div id="compare" class="compare">&nbsp;</div>
         </div>
       </div>
@@ -105,14 +105,14 @@
       <h2 id="h-stage">Engine life stage</h2>
       <p id="phase-text" class="phase-text"></p>
       <div id="stage" class="stage" role="list"></div>
-      <p class="hint">Eight stages from healthy to end of life, based on the estimate on the gauge. The stage boundaries are illustrative, not NASA limits.</p>
+      <p class="hint">Eight stages from healthy (125 cycles or more) to end of life, based on the estimate on the gauge. The stage boundaries are illustrative, not NASA limits.</p>
     </section>
 
     <section class="panel" aria-labelledby="h-journey">
       <h2 id="h-journey">How the estimate changes as the engine ages</h2>
       <p id="journey-text" class="hint journey-text"></p>
       <div class="chart-wrap"><svg id="journey" viewBox="0 0 1000 340" role="img" aria-label="True and predicted remaining life for every observed cycle"></svg></div>
-      <p class="legend"><span class="key-line solid"></span> Model estimate <span class="key-line dash"></span> True remaining life (NASA)</p>
+      <p class="legend"><span class="key-line solid"></span> Model estimate <span class="key-line dash"></span> True remaining life (NASA, shown up to 125)</p>
     </section>
 
     <section class="panel" aria-labelledby="h-signals">
@@ -129,7 +129,7 @@
 
     <section class="panel" aria-labelledby="h-look">
       <h2 id="h-look">What the models look at</h2>
-      <p class="hint">Share of the decision each input gets in the tuned Gradient Boosting model. The operating cycle dominates; the sensors refine the estimate.</p>
+      <p class="hint">Share of the decision each input gets in the tuned Gradient Boosting model. Sensor 11 carries the most weight, followed by the operating cycle and sensor 4.</p>
       <div id="importance" class="importance"></div>
     </section>
 
@@ -141,7 +141,7 @@
     <section class="panel">
       <details id="readings">
         <summary>Edit the sensor readings</summary>
-        <p class="hint">Change any value, then estimate again. The models were trained on 18 inputs: the cycle count, two operating settings and 15 sensors.</p>
+        <p class="hint">Change any value, then estimate again. The models were trained on 18 inputs: the cycle count, two operating settings and 15 sensors. They learn remaining life capped at 125 cycles, so an estimate near 125 means &ldquo;at least 125&rdquo;.</p>
         <form id="form" class="grid"></form>
         <button id="predict" class="btn" type="submit" form="form">Estimate remaining life</button>
       </details>

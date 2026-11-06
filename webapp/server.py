@@ -4,14 +4,16 @@ Run from the project root with:
     python -m uvicorn webapp.server:app --reload
 then open http://127.0.0.1:8000
 """
+import math
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from webapp.data import load_state
 
@@ -33,6 +35,21 @@ app = FastAPI(title="Engine RUL API", version="1.2", lifespan=lifespan)
 
 class PredictRequest(BaseModel):
     features: dict[str, float]
+
+    @field_validator("features")
+    @classmethod
+    def finite_numbers(cls, value):
+        bad = [k for k, v in value.items() if not math.isfinite(v)]
+        if bad:
+            raise ValueError(f"Readings must be finite numbers: {bad}")
+        return value
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request, exc):
+    """Return a clean 422. The default handler echoes the bad input, and NaN cannot be written as JSON."""
+    errors = [{"loc": list(e["loc"]), "msg": str(e["msg"])} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": errors})
 
 
 @app.get("/api/meta")
@@ -89,8 +106,15 @@ def predict(request: PredictRequest):
     if missing:
         raise HTTPException(status_code=422, detail=f"Missing features: {missing}")
     frame = pd.DataFrame([request.features], columns=state["features"])
+    margin = 0.05   # tolerate 5% beyond the training range before warning
+    outside = []
+    for f, (lo, hi) in state["ranges"].items():
+        span = (hi - lo) or 1.0
+        if not (lo - margin * span <= request.features[f] <= hi + margin * span):
+            outside.append(f)
     return {
-        "predictions": {n: float(m.predict(frame)[0]) for n, m in state["models"].items()}
+        "predictions": {n: float(m.predict(frame)[0]) for n, m in state["models"].items()},
+        "outside_training_range": outside,
     }
 
 

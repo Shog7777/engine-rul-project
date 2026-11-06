@@ -8,7 +8,7 @@ import joblib
 import pandas as pd
 import streamlit as st
 
-from Helper.helper import PROJECT_ROOT, MODEL_FILES, load_cmapss, last_cycle_rows
+from Helper.helper import MODEL_FILES, PROJECT_ROOT, last_cycle_rows, load_cmapss
 
 MODELS_DIR = PROJECT_ROOT / "Models"
 DATA_DIR = PROJECT_ROOT / "Data"
@@ -49,7 +49,8 @@ except FileNotFoundError as error:
 st.title("✈️ Engine Remaining Useful Life Prediction")
 st.write(
     "Estimate how many operating cycles an aircraft engine has left before failure, "
-    "and compare four regression models side by side."
+    "and compare four regression models side by side. The models learn remaining life capped at "
+    "125 cycles, so an estimate near 125 means \"at least 125 cycles left\"."
 )
 
 with st.sidebar:

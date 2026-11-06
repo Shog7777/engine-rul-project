@@ -8,7 +8,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from Helper.helper import (
-    CONSTANT_COLUMNS, MODEL_FILES, PROJECT_ROOT, add_rul, evaluate, last_cycle_rows, load_cmapss,
+    CONSTANT_COLUMNS,
+    MODEL_FILES,
+    PROJECT_ROOT,
+    add_rul,
+    evaluate,
+    last_cycle_rows,
+    load_cmapss,
 )
 
 MODELS = PROJECT_ROOT / "Models"
@@ -128,8 +134,62 @@ def test_api_trajectory(client):
 
 def test_api_importance_dataset_and_pages(client):
     imp = client.get("/api/importance").json()
-    assert imp[0]["feature"] == "cycle" and sum(i["importance"] for i in imp) == pytest.approx(1.0)
+    assert sum(i["importance"] for i in imp) == pytest.approx(1.0)
+    by_name = {i["feature"]: i["importance"] for i in imp}
+    assert by_name["setting_1"] + by_name["setting_2"] < 0.01      # operating settings add almost nothing
     assert client.get("/api/dataset").json()["engines"] == 100
     page = client.get("/")
     assert page.status_code == 200 and "Engine Health Monitor" in page.text
     assert client.get("/assets/app.js").status_code == 200
+
+
+def test_api_flags_readings_outside_the_training_range(client):
+    engine = client.get("/api/engines").json()[0]["features"]
+    ok = client.post("/api/predict", json={"features": engine}).json()
+    assert ok["outside_training_range"] == []
+    wild = {**engine, "sensor_11": engine["sensor_11"] * 3}
+    flagged = client.post("/api/predict", json={"features": wild}).json()
+    assert "sensor_11" in flagged["outside_training_range"]
+
+
+def test_api_rejects_non_finite_readings(client):
+    engine = client.get("/api/engines").json()[0]["features"]
+    body = json.dumps({"features": {**engine, "sensor_2": float("nan")}})
+    r = client.post("/api/predict", content=body, headers={"Content-Type": "application/json"})
+    assert r.status_code == 422
+
+
+# ---------------------------------------------------------------- documentation matches the results
+def test_readme_results_table_matches_saved_results():
+    readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf8")
+    saved = pd.read_csv(MODELS / "test_results.csv").set_index("Model")
+    for name, row in saved.iterrows():
+        line = next(line for line in readme.splitlines() if line.startswith(f"| {name} |"))
+        nums = [float(x.strip("* ")) for x in line.split("|")[2:5]]
+        assert nums == [round(row["MAE"], 3), round(row["RMSE"], 3), round(row["R²"], 3)], name
+
+
+def test_predictions_stay_below_the_training_cap(models_and_features):
+    """The models learn min(RUL, 125), so they must not predict far beyond it."""
+    models, features = models_and_features
+    from Helper.helper import RUL_CAP
+    test = last_cycle_rows(load_cmapss(PROJECT_ROOT / "Data/Original/test_FD001.txt"))
+    for name in ("Random Forest", "Gradient Boosting"):
+        assert models[name].predict(test[features]).max() <= RUL_CAP + 10
+
+
+def test_models_beat_a_constant_baseline(models_and_features):
+    from sklearn.dummy import DummyRegressor
+    models, features = models_and_features
+    train = pd.read_csv(PROJECT_ROOT / "Data/Cleaned/train_FD001_cleaned.csv")
+    test = last_cycle_rows(load_cmapss(PROJECT_ROOT / "Data/Original/test_FD001.txt"))
+    y = pd.read_csv(PROJECT_ROOT / "Data/Original/RUL_FD001.txt", header=None)[0]
+    base = evaluate(y, DummyRegressor().fit(train[features], train["RUL"]).predict(test[features]))
+    for name, model in models.items():
+        assert evaluate(y, model.predict(test[features]))["MAE"] < 0.6 * base["MAE"], name
+
+
+def test_model_input_columns_match_the_saved_feature_list(models_and_features):
+    models, features = models_and_features
+    for name, model in models.items():
+        assert list(model.feature_names_in_) == features, name

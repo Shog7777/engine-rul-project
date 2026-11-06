@@ -120,36 +120,46 @@ The 14 tests check the data and the cleaned file, the target definition, the sav
 1. **Set-up** — created the repository structure, a virtual environment and a pinned `requirements.txt`.
 2. **EDA** — checked types, missing values, duplicates, the RUL distribution, engine lifetimes, sensor trends, constant columns, outliers and correlations with RUL; wrote a conclusion after each finding.
 3. **Preprocessing** — computed the RUL target, removed the 7 constant columns, kept the statistical outliers (they come from real end-of-life degradation), found no need for imputation or categorical encoding, and saved `Data/Cleaned/train_FD001_cleaned.csv`. The model input has **18 features**: `cycle`, 2 operating settings and 15 sensors. `engine_id` is used only for grouping.
-4. **Splitting without leakage** — all splits are by engine (`GroupShuffleSplit` with `random_state=42` and `GroupKFold`), because rows of one engine are strongly dependent. Scaling happens *inside* the model pipelines, so the scaler is fitted only on training data and is saved with each model.
-5. **Models** — Linear Regression, Ridge, Random Forest and Gradient Boosting (`StandardScaler` for the two linear models, none for the tree models), compared with 5-fold grouped cross-validation.
-6. **Tuning** — `GridSearchCV` with grouped folds for Ridge, Random Forest and Gradient Boosting, choosing by mean validation RMSE.
-7. **Final evaluation** — final models were fitted on all 100 training engines and evaluated once on the official FD001 test set (the last observed row of each of the 100 test engines, compared with NASA's true RUL).
-8. **Saving and app** — saved all four fitted pipelines and built the Streamlit app that loads them.
+4. **Choosing the training target** — the sensors barely move while an engine still has more than about 125 cycles left (39% of the training rows), so the models are trained on `min(RUL, 125)`. The cleaned file keeps the real RUL, and every score on the NASA test set is measured against the **real** RUL.
+5. **Splitting without leakage** — all splits are by engine (`GroupShuffleSplit` with `random_state=42` and `GroupKFold`), because rows of one engine are strongly dependent. Scaling happens *inside* the model pipelines, so the scaler is fitted only on training data and is saved with each model.
+6. **Models** — Linear Regression, Ridge, Random Forest and Gradient Boosting (`StandardScaler` for the two linear models, none for the tree models), compared with 5-fold grouped cross-validation.
+7. **Tuning** — `GridSearchCV` with grouped folds for Ridge, Random Forest and Gradient Boosting, choosing by mean validation RMSE.
+8. **Final evaluation** — final models were fitted on all 100 training engines and evaluated once on the official FD001 test set (the last observed row of each of the 100 test engines, compared with NASA's true RUL).
+9. **Ablation** — the same pipelines were also trained on the real, uncapped RUL to measure what the cap buys.
+10. **Saving and apps** — saved all four fitted pipelines and built the Streamlit app and the FastAPI web app that load them.
 
 ## Final Results
 
-Official NASA FD001 test set (100 engines):
+Official NASA FD001 test set (100 engines), models trained on `min(RUL, 125)`, scored against the real RUL:
 
 | Model | MAE (cycles) | RMSE (cycles) | R² |
 |---|---:|---:|---:|
-| Gradient Boosting | **18.831** | **25.226** | **0.632** |
-| Random Forest | 18.969 | 25.273 | 0.630 |
-| Ridge | 25.930 | 31.211 | 0.436 |
-| Linear Regression | 25.975 | 31.250 | 0.434 |
+| Gradient Boosting | **13.048** | **17.725** | **0.818** |
+| Random Forest | 13.711 | 18.295 | 0.806 |
+| Ridge | 17.780 | 22.545 | 0.706 |
+| Linear Regression | 17.786 | 22.554 | 0.705 |
 
-Cross-validation (5 grouped folds on the training engines) ranks the models the same way: Gradient Boosting RMSE 37.2, Random Forest 37.5, Ridge 40.6.
+Cross-validation (5 grouped folds on the training engines, capped target) ranks the models the same way: Gradient Boosting RMSE 16.5, Random Forest 16.6, Ridge 20.1.
 
-**Selected model — Gradient Boosting (tuned: 200 trees, learning rate 0.05, depth 2).** It has the lowest MAE and RMSE and the highest R² on the test set and also won in cross-validation. On average its prediction is 18.8 cycles away from the true RUL. Random Forest is almost tied (0.14 cycles higher MAE), so the choice between the two is not strong evidence on 100 engines; both are about 19% better in RMSE than the linear models, because the sensor–RUL relationship is non-linear.
+**Selected model — Gradient Boosting (tuned: 200 trees, learning rate 0.1, depth 3).** It has the lowest MAE and RMSE and the highest R² on the test set and also won in cross-validation. On average its prediction is 13.0 cycles away from the true RUL. Random Forest is close, and a bootstrap over the 100 test engines gives the Gradient Boosting MAE an interval of roughly 10.7 to 15.4 cycles, so the gap between the two tree models is within the noise. Both tree models are about 21% better in RMSE than the linear models, because the sensor–RUL relationship is non-linear.
 
 ![Model comparison](Images/model_comparison.png)
 
-### Limitations
-- The model overestimates RUL for 69 of the 100 test engines (average +10.5 cycles) and for 21 of the 25 engines that are within 30 cycles of failure. That is the risky direction for maintenance.
-- `cycle` is by far the most important feature (importance ≈ 0.64), which works for FD001 but may not generalise to other operating conditions (FD002–FD004).
-- Data is simulated, and the app is an educational prototype, not a maintenance tool.
+### What the cap buys (ablation)
 
-### Extra experiment
-Capping the target at 125 cycles raises R² (Gradient Boosting 0.632 → 0.837), but the true target is capped too, so it is an easier task and not directly comparable. It is reported in Notebook 02 only as an idea for improvement; the saved models use the real RUL.
+| Gradient Boosting | Test RMSE | PHM08 score (lower is better) |
+|---|---:|---:|
+| Trained on `min(RUL, 125)` | 17.7 | 575 |
+| Trained on the real RUL | 25.6 | 5,725 |
+
+PHM08 is NASA's asymmetric score for this data set: a prediction that is too late is punished harder than one that is too early. Both rows are scored against the real RUL of the test engines.
+
+### Limitations
+- Predictions saturate near 125 cycles, so an estimate of 125 means "at least 125 cycles left". Engines whose real RUL is above 125 are underestimated (about 11 cycles on average).
+- Close to failure the model leans late: of the 25 test engines within 30 cycles of failure, 18 are overestimated (+7 cycles on average). That is the risky direction for maintenance.
+- Each prediction uses a single row (the current readings). Using the recent history of an engine would very likely help further.
+- Only the FD001 subset (one operating condition) was used; FD002–FD004 would need more work.
+- Data is simulated, and the apps are educational prototypes, not maintenance tools.
 
 ## References
 
