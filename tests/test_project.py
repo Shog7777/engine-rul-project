@@ -63,9 +63,9 @@ def models_and_features():
     return {n: joblib.load(MODELS / f) for n, f in MODEL_FILES.items()}, features
 
 
-def test_four_models_saved_with_expected_features(models_and_features):
+def test_five_models_saved_with_expected_features(models_and_features):
     models, features = models_and_features
-    assert len(models) == 4 and len(features) == 18
+    assert len(models) == 5 and len(features) == 18
     assert "engine_id" not in features and "RUL" not in features
 
 
@@ -82,7 +82,7 @@ def test_saved_results_match_recomputed_test_metrics(models_and_features):
 
 def test_linear_models_include_their_scaler(models_and_features):
     models, _ = models_and_features
-    for name in ("Linear Regression", "Ridge"):
+    for name in ("Linear Regression", "Ridge", "Lasso"):
         assert "scaler" in models[name].named_steps
     for name in ("Random Forest", "Gradient Boosting"):
         assert "scaler" not in models[name].named_steps
@@ -103,7 +103,7 @@ def client():
 
 def test_api_meta_and_engines(client):
     meta = client.get("/api/meta").json()
-    assert len(meta["features"]) == 18 and len(meta["models"]) == 4 and len(meta["results"]) == 4
+    assert len(meta["features"]) == 18 and len(meta["models"]) == 5 and len(meta["results"]) == 5
     engines = client.get("/api/engines").json()
     assert len(engines) == 100
     assert set(engines[0]["features"]) == set(meta["features"])

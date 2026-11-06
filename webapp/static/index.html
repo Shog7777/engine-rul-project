@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Engine Health Monitor</title>
-  <meta name="description" content="Estimate the remaining useful life of an aircraft turbofan engine from its sensor readings, with four regression models.">
+  <meta name="description" content="Estimate the remaining useful life of an aircraft turbofan engine from its sensor readings, with five regression models.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27white%27 stroke=%27%2336627d%27 stroke-width=%272%27/%3E%3Cpath d=%27M16 16 L16 5%27 stroke=%27%23ff5f34%27 stroke-width=%273%27 stroke-linecap=%27round%27 transform=%27rotate(50 16 16)%27/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,7 @@
     <section class="hero" aria-labelledby="headline">
       <div class="hero-copy">
         <h1 id="headline">How many cycles does this engine have left?</h1>
-        <p class="lead">Pick one of the 100 NASA test engines. Four regression models read its sensors and estimate the operating cycles remaining before failure. NASA recorded the true value, so you can see how close each model gets.</p>
+        <p class="lead">Pick one of the 100 NASA test engines. Five regression models read its sensors and estimate the operating cycles remaining before failure. NASA recorded the true value, so you can see how close each model gets.</p>
 
         <div class="controls">
           <label for="engine">Test engine</label>
@@ -122,7 +122,7 @@
     </section>
 
     <section class="panel" aria-labelledby="h-models">
-      <h2 id="h-models">All four models on this engine</h2>
+      <h2 id="h-models">All five models on this engine</h2>
       <div id="bars" class="bars"></div>
       <p class="legend"><span class="key-dot"></span> Model estimate <span class="key-diamond"></span> True remaining life (NASA)</p>
     </section>

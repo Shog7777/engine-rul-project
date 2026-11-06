@@ -101,7 +101,7 @@ def trajectory(engine_id: int):
 
 @app.post("/api/predict")
 def predict(request: PredictRequest):
-    """Predict RUL (cycles) with all four saved models."""
+    """Predict RUL (cycles) with all five saved models."""
     missing = [f for f in state["features"] if f not in request.features]
     if missing:
         raise HTTPException(status_code=422, detail=f"Missing features: {missing}")

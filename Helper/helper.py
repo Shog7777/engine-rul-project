@@ -33,6 +33,7 @@ RUL_CAP = 125
 MODEL_FILES = {
     "Linear Regression": "linear_regression.joblib",
     "Ridge": "ridge.joblib",
+    "Lasso": "lasso.joblib",
     "Random Forest": "random_forest.joblib",
     "Gradient Boosting": "gradient_boosting.joblib",
 }

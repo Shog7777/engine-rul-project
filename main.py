@@ -49,7 +49,7 @@ except FileNotFoundError as error:
 st.title("✈️ Engine Remaining Useful Life Prediction")
 st.write(
     "Estimate how many operating cycles an aircraft engine has left before failure, "
-    "and compare four regression models side by side. The models learn remaining life capped at "
+    "and compare five regression models side by side. The models learn remaining life capped at "
     "125 cycles, so an estimate near 125 means \"at least 125 cycles left\"."
 )
 
@@ -58,7 +58,7 @@ with st.sidebar:
     selected_model = st.selectbox(
         "Choose a model", list(models), index=list(models).index(DEFAULT_MODEL)
     )
-    st.caption("The selected model is highlighted; all four models always run.")
+    st.caption("The selected model is highlighted; all five models always run.")
     st.divider()
     st.caption(
         "Data: NASA C-MAPSS FD001 (simulated engines). "

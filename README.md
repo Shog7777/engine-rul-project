@@ -4,7 +4,7 @@
 
 This project predicts the **remaining useful life (RUL)** of simulated aircraft engines: how many operating cycles an engine can still run before it fails. The prediction uses the current operating cycle, operating settings and sensor readings, and shows how RUL estimates can support predictive-maintenance planning.
 
-The project contains exploratory data analysis, preprocessing, a comparison of four regression models with cross-validation and tuning, and a Streamlit app that compares the saved models side by side.
+The project contains exploratory data analysis, preprocessing, a comparison of five regression models with cross-validation and tuning, and a Streamlit app that compares the saved models side by side.
 
 ## Dataset
 
@@ -93,7 +93,7 @@ Open the local URL shown in the terminal (usually http://localhost:8501). In the
 
 1. pick a model in the sidebar;
 2. start from the last observed cycle of any NASA test engine (true RUL shown), edit the readings, and press **Predict RUL**;
-3. see the prediction of all four models side by side, with a chart;
+3. see the prediction of all five models side by side, with a chart;
 4. open the **Model comparison** tab for the MAE / RMSE / R² table and plots.
 
 ## Bonus: FastAPI Web App
@@ -123,11 +123,11 @@ The 14 tests check the data and the cleaned file, the target definition, the sav
 3. **Preprocessing** — computed the RUL target, removed the 7 constant columns, kept the statistical outliers (they come from real end-of-life degradation), found no need for imputation or categorical encoding, and saved `Data/Cleaned/train_FD001_cleaned.csv`. The model input has **18 features**: `cycle`, 2 operating settings and 15 sensors. `engine_id` is used only for grouping.
 4. **Choosing the training target** — the sensors barely move while an engine still has more than about 125 cycles left (39% of the training rows), so the models are trained on `min(RUL, 125)`. The cleaned file keeps the real RUL, and every score on the NASA test set is measured against the **real** RUL.
 5. **Splitting without leakage** — all splits are by engine (`GroupShuffleSplit` with `random_state=42` and `GroupKFold`), because rows of one engine are strongly dependent. Scaling happens *inside* the model pipelines, so the scaler is fitted only on training data and is saved with each model.
-6. **Models** — Linear Regression, Ridge, Random Forest and Gradient Boosting (`StandardScaler` for the two linear models, none for the tree models), compared with 5-fold grouped cross-validation.
-7. **Tuning** — `GridSearchCV` with grouped folds for Ridge, Random Forest and Gradient Boosting, choosing by mean validation RMSE.
+6. **Models** — Linear Regression, Ridge, Lasso, Random Forest and Gradient Boosting (`StandardScaler` for the three linear models, none for the tree models), compared with 5-fold grouped cross-validation. Lasso and the per-model prediction plots come from a teammate's Part 2 notebook.
+7. **Tuning** — `GridSearchCV` with grouped folds for Ridge, Lasso, Random Forest and Gradient Boosting, choosing by mean validation RMSE.
 8. **Final evaluation** — final models were fitted on all 100 training engines and evaluated once on the official FD001 test set (the last observed row of each of the 100 test engines, compared with NASA's true RUL).
 9. **Ablation** — the same pipelines were also trained on the real, uncapped RUL to measure what the cap buys.
-10. **Saving and apps** — saved all four fitted pipelines and built the Streamlit app and the FastAPI web app that load them.
+10. **Saving and apps** — saved all five fitted pipelines and built the Streamlit app and the FastAPI web app that load them.
 
 ## Final Results
 
@@ -139,10 +139,11 @@ Official NASA FD001 test set (100 engines), models trained on `min(RUL, 125)`, s
 | Random Forest | 13.711 | 18.295 | 0.806 |
 | Ridge | 17.780 | 22.545 | 0.706 |
 | Linear Regression | 17.786 | 22.554 | 0.705 |
+| Lasso | 17.789 | 22.556 | 0.705 |
 
-Cross-validation (5 grouped folds on the training engines, capped target) ranks the models the same way: Gradient Boosting RMSE 16.5, Random Forest 16.6, Ridge 20.1.
+Cross-validation (5 grouped folds on the training engines, capped target) ranks the models the same way: Gradient Boosting RMSE 16.5, Random Forest 16.6, the three linear models 20.1.
 
-**Selected model — Gradient Boosting (tuned: 200 trees, learning rate 0.1, depth 3).** It has the lowest MAE and RMSE and the highest R² on the test set and also won in cross-validation. On average its prediction is 13.0 cycles away from the true RUL. Random Forest is close, and a bootstrap over the 100 test engines gives the Gradient Boosting MAE an interval of roughly 10.7 to 15.4 cycles, so the gap between the two tree models is within the noise. Both tree models are about 21% better in RMSE than the linear models, because the sensor–RUL relationship is non-linear.
+**Selected model — Gradient Boosting (tuned: 200 trees, learning rate 0.1, depth 3).** It has the lowest MAE and RMSE and the highest R² on the test set and also won in cross-validation. On average its prediction is 13.0 cycles away from the true RUL. Random Forest is close, and a bootstrap over the 100 test engines gives the Gradient Boosting MAE an interval of roughly 10.7 to 15.4 cycles, so the gap between the two tree models is within the noise. Both tree models are about 21% better in RMSE than the three linear models, which are almost identical (Lasso shrinks none of the 18 coefficients to zero), because the sensor–RUL relationship is non-linear.
 
 ![Model comparison](Images/model_comparison.png)
 
