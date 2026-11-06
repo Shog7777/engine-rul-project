@@ -232,22 +232,16 @@ td.best { color: var(--teal); font-weight: 700; }
   .needle, .bar-fill, .imp-fill, .btn, .chip, .cell { transition: none; }
 }
 
-/* ---------- aircraft line drawings ---------- */
-.fleet { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: 1rem; margin-top: 1.25rem; }
-.fleet figure { margin: 0; padding: 0.75rem 0.75rem 1rem; border: 1px solid var(--line); background: #fff; }
-.ac { width: 100%; height: auto; max-height: 11rem; display: block; margin-bottom: 0.6rem; }
-.ac .body { fill: #fff3da; stroke: var(--navy); stroke-width: 1.6; stroke-linejoin: round; }
-.ac .thin { fill: none; stroke: var(--navy); stroke-width: 1.2; stroke-linecap: round; }
-.ac .eng { fill: #ffb59d; stroke: var(--red); stroke-width: 1.8; }
-.ac .arm { stroke: var(--navy); stroke-width: 3; stroke-linecap: round; }
-.ac .disc { fill: none; stroke: var(--line-hi); stroke-width: 1.2; stroke-dasharray: 4 4; }
-.ac .blade { stroke: var(--navy); stroke-width: 2.6; stroke-linecap: round; }
-.ac .spin { transform-box: fill-box; transform-origin: center; animation: spin 0.9s linear infinite; }
-.ac .spin.slow { animation-duration: 3.2s; transform-origin: 100px 90px; transform-box: view-box; }
-.fleet figcaption { font-size: 0.82rem; line-height: 1.45; color: var(--muted); }
+/* ---------- aircraft blueprints ---------- */
+.fleet { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+.fleet figure { margin: 0; border: 1.5px solid var(--navy); background: #fff; }
+.ac { width: 100%; height: 190px; display: block; }
+.fleet figcaption { padding: 0.7rem 0.8rem 0.9rem; font-size: 0.82rem; line-height: 1.45; color: var(--muted); }
 .fleet figcaption b { display: block; color: var(--navy); font-size: 0.9rem; margin-bottom: 0.15rem; }
-@media (prefers-reduced-motion: reduce) { .ac .spin { animation: none; } }
 
-/* ---------- ground scene ---------- */
-.scene { margin-top: 2rem; border: 2px solid var(--navy); overflow: hidden; box-shadow: 0 10px 30px rgba(47, 27, 27, 0.14); }
-.scene canvas { display: block; width: 100%; height: 250px; }
+
+/* ---------- track and launch pad ---------- */
+.showcase { display: grid; grid-template-columns: 1.65fr 1fr; gap: 1rem; margin-top: 2rem; }
+.show-card { border: 2px solid var(--navy); overflow: hidden; box-shadow: 0 10px 30px rgba(47, 27, 27, 0.16); background: var(--navy); }
+.show-card canvas { display: block; width: 100%; height: 330px; }
+@media (max-width: 860px) { .showcase { grid-template-columns: 1fr; } .show-card canvas { height: 280px; } }

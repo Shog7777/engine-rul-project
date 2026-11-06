@@ -98,7 +98,7 @@ Open the local URL shown in the terminal (usually http://localhost:8501). In the
 
 ## Bonus: FastAPI Web App
 
-Besides the required Streamlit app, `webapp/` contains a web version of the same predictor: a **FastAPI** backend that loads the saved models, and a custom HTML/CSS/JavaScript interface styled as an engineering drawing on a sunrise sky, with circling aircraft, rockets, birds and a ground scene with sports cars. It uses the same files in `Models/`, so run the notebooks first.
+Besides the required Streamlit app, `webapp/` contains a web version of the same predictor: a **FastAPI** backend that loads the saved models, and a custom HTML/CSS/JavaScript interface styled as an engineering drawing on a sunrise sky, with circling wireframe aircraft and rockets, a blueprint launch pad and a cinematic sports-car scene. It uses the same files in `Models/`, so run the notebooks first.
 
 ```bash
 python -m uvicorn webapp.server:app

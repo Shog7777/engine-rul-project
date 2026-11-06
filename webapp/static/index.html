@@ -80,65 +80,23 @@
 
     <section class="panel" aria-labelledby="h-fleet">
       <h2 id="h-fleet">Where engine health matters in flight</h2>
-      <p class="hint">The NASA data simulates large turbofans, the engines of the first two aircraft below. Estimating remaining life applies to every engine in a fleet, but helicopters and drones would need their own data and models.</p>
+      <p class="hint">The NASA data simulates large turbofans, the engines of the first three aircraft below. Estimating remaining life applies to every engine in a fleet, but a drone would need its own data and models.</p>
       <div class="fleet">
         <figure>
-          <svg class="ac" viewBox="0 0 200 200" role="img" aria-label="Top view of a twin-engine airliner">
-            <path class="body" d="M100 8C108 8 112 20 112 40L112 150C112 170 106 188 100 196C94 188 88 170 88 150L88 40C88 20 92 8 100 8Z"/>
-            <path class="body" d="M112 70L186 118L186 128L112 104Z"/><path class="body" d="M88 70L14 118L14 128L88 104Z"/>
-            <path class="body" d="M112 160L148 180L148 186L112 176Z"/><path class="body" d="M88 160L52 180L52 186L88 176Z"/>
-            <rect class="eng" x="142" y="86" width="12" height="26" rx="6"/><rect class="eng" x="46" y="86" width="12" height="26" rx="6"/>
-            <path class="thin" d="M94 28Q100 23 106 28"/>
-          </svg>
+          <canvas class="ac" data-kind="airliner" role="img" aria-label="Blueprint of a twin-engine airliner, top view"></canvas>
           <figcaption><b>Twin-engine airliner</b>Two large turbofans, the type this data simulates.</figcaption>
         </figure>
         <figure>
-          <svg class="ac" viewBox="0 0 200 200" role="img" aria-label="Top view of a four-engine cargo jet">
-            <path class="body" d="M100 8C109 8 114 20 114 40L114 150C114 170 107 188 100 196C93 188 86 170 86 150L86 40C86 20 91 8 100 8Z"/>
-            <path class="body" d="M114 66L190 114L190 126L114 106Z"/><path class="body" d="M86 66L10 114L10 126L86 106Z"/>
-            <path class="body" d="M114 160L150 180L150 187L114 177Z"/><path class="body" d="M86 160L50 180L50 187L86 177Z"/>
-            <rect class="eng" x="132" y="78" width="11" height="24" rx="5.5"/><rect class="eng" x="162" y="96" width="11" height="24" rx="5.5"/>
-            <rect class="eng" x="57" y="78" width="11" height="24" rx="5.5"/><rect class="eng" x="27" y="96" width="11" height="24" rx="5.5"/>
-            <path class="thin" d="M94 28Q100 23 106 28"/>
-          </svg>
-          <figcaption><b>Four-engine cargo jet</b>Four turbofans, each one tracked on its own.</figcaption>
+          <canvas class="ac" data-kind="quad" role="img" aria-label="Blueprint of a four-engine airliner, top view"></canvas>
+          <figcaption><b>Four-engine airliner</b>Four turbofans, each one tracked on its own.</figcaption>
         </figure>
         <figure>
-          <svg class="ac" viewBox="0 0 200 200" role="img" aria-label="Top view of a business jet with engines on the tail">
-            <path class="body" d="M100 12C106 12 109 22 109 42L109 140C109 162 105 184 100 192C95 184 91 162 91 140L91 42C91 22 94 12 100 12Z"/>
-            <path class="body" d="M109 78L170 114L170 122L109 104Z"/><path class="body" d="M91 78L30 114L30 122L91 104Z"/>
-            <path class="body" d="M109 164L134 180L134 185L109 176Z"/><path class="body" d="M91 164L66 180L66 185L91 176Z"/>
-            <rect class="eng" x="110" y="130" width="10" height="28" rx="5"/><rect class="eng" x="80" y="130" width="10" height="28" rx="5"/>
-            <path class="thin" d="M95 30Q100 26 105 30"/>
-          </svg>
+          <canvas class="ac" data-kind="bizjet" role="img" aria-label="Blueprint of a business jet with engines on the tail, top view"></canvas>
           <figcaption><b>Business jet</b>Small turbofans mounted on the rear fuselage.</figcaption>
         </figure>
         <figure>
-          <svg class="ac" viewBox="0 0 200 200" role="img" aria-label="Top view of a helicopter">
-            <rect class="body" x="95" y="120" width="10" height="62" rx="3"/>
-            <path class="body" d="M92 176L108 176L108 186L92 186Z"/>
-            <ellipse class="body" cx="100" cy="90" rx="22" ry="38"/>
-            <rect class="eng" x="90" y="70" width="20" height="30" rx="8"/>
-            <circle class="disc" cx="100" cy="90" r="82"/>
-            <g class="spin slow"><line class="blade" x1="22" y1="90" x2="178" y2="90"/></g>
-            <circle class="body" cx="100" cy="90" r="5"/>
-          </svg>
-          <figcaption><b>Helicopter</b>Turboshaft engines turn the rotor. A different engine, so different data.</figcaption>
-        </figure>
-        <figure>
-          <svg class="ac" viewBox="0 0 200 200" role="img" aria-label="Top view of a quadcopter drone">
-            <line class="arm" x1="100" y1="100" x2="46" y2="46"/><line class="arm" x1="100" y1="100" x2="154" y2="46"/>
-            <line class="arm" x1="100" y1="100" x2="46" y2="154"/><line class="arm" x1="100" y1="100" x2="154" y2="154"/>
-            <circle class="disc" cx="46" cy="46" r="30"/><circle class="disc" cx="154" cy="46" r="30"/>
-            <circle class="disc" cx="46" cy="154" r="30"/><circle class="disc" cx="154" cy="154" r="30"/>
-            <g class="spin"><line class="blade" x1="22" y1="46" x2="70" y2="46"/></g>
-            <g class="spin"><line class="blade" x1="130" y1="46" x2="178" y2="46"/></g>
-            <g class="spin"><line class="blade" x1="22" y1="154" x2="70" y2="154"/></g>
-            <g class="spin"><line class="blade" x1="130" y1="154" x2="178" y2="154"/></g>
-            <rect class="body" x="82" y="82" width="36" height="36" rx="9"/>
-            <circle class="eng" cx="100" cy="100" r="8"/>
-          </svg>
-          <figcaption><b>Drone</b>Motors and small engines wear too, with the same remaining-life idea.</figcaption>
+          <canvas class="ac" data-kind="uav" role="img" aria-label="Blueprint of a long-wing drone with a rear propeller, top view"></canvas>
+          <figcaption><b>Long-wing drone</b>A different engine and different data, with the same remaining-life idea.</figcaption>
         </figure>
       </div>
     </section>
@@ -200,7 +158,10 @@
       </div>
     </section>
 
-    <section class="scene" aria-hidden="true"><canvas id="ground"></canvas></section>
+    <section class="showcase" aria-hidden="true">
+      <div class="show-card"><canvas id="track"></canvas></div>
+      <div class="show-card"><canvas id="launch"></canvas></div>
+    </section>
 
     <footer class="titleblock" aria-label="Project summary">
       <div><span>Project</span>Engine remaining useful life</div>
@@ -213,7 +174,8 @@
   </main>
 
   <script src="/assets/sky.js"></script>
-  <script src="/assets/scene.js"></script>
+  <script src="/assets/track.js"></script>
+  <script src="/assets/launch.js"></script>
   <script src="/assets/app.js"></script>
 </body>
 </html>
