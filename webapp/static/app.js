@@ -242,6 +242,104 @@
     $("facts").innerHTML = items.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
   }
 
+
+  /* ---------- AI agent demo ---------- */
+  const sleep = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+  const pretty = (o) => JSON.stringify(o, null, 2);
+  let agentBusy = false;
+
+  function addMsg(kind, label, html) {
+    const log = $("agent-log");
+    const empty = log.querySelector(".agent-empty");
+    if (empty) empty.remove();
+    const el = document.createElement("div");
+    el.className = `msg ${kind}`;
+    el.innerHTML = `<small>${label}</small>${html}`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    return el;
+  }
+
+  async function runTool(name, args) {
+    const steps = document.querySelectorAll(".loop li");
+    steps.forEach((li) => li.classList.remove("pulse"));
+    steps[2].classList.add("pulse");
+    addMsg("tool", "Tool call", `<pre>${name}(${pretty(args)})</pre>`);
+    await sleep(500);
+    const res = await fetch("/api/agent/call", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, arguments: args }),
+    }).then((r) => r.json());
+    steps[3].classList.add("pulse");
+    const shown = pretty(res.result);
+    addMsg("tool", "Tool result", `<pre>${shown.length > 900 ? shown.slice(0, 900) + "\n…" : shown}</pre>`);
+    await sleep(500);
+    return res.result;
+  }
+
+  async function typeAnswer(text) {
+    const el = addMsg("answer", "Answer", `<span class="caret"></span>`);
+    const span = document.createElement("span");
+    el.insertBefore(span, el.lastChild);
+    if (reduce) { span.textContent = text; el.querySelector(".caret")?.classList.remove("caret"); return; }
+    for (const word of text.split(" ")) {
+      span.textContent += (span.textContent ? " " : "") + word;
+      $("agent-log").scrollTop = $("agent-log").scrollHeight;
+      await sleep(35);
+    }
+    el.querySelector(".caret")?.classList.remove("caret");
+  }
+
+  async function runAgent() {
+    if (agentBusy || state.engineId == null) return;
+    agentBusy = true;
+    $("agent-run").disabled = true;
+    $("agent-log").innerHTML = "";
+    const steps = document.querySelectorAll(".loop li");
+    try {
+      const kind = $("agent-prompt").value;
+      const id = state.engineId;
+      steps[0].classList.add("pulse");
+      if (kind === "brief") {
+        addMsg("user", "You", `Should engine ${id} go in for maintenance soon?`);
+        await sleep(600);
+        steps.forEach((li) => li.classList.remove("pulse")); steps[1].classList.add("pulse");
+        addMsg("think", "Agent thinks", `I need this engine’s remaining life first, so I will call predict_rul.`);
+        await sleep(700);
+        const p = await runTool("predict_rul", { engine_id: id });
+        if (p.error) { await typeAnswer(p.error); return; }
+        addMsg("think", "Agent thinks", `Now I need a recommendation, so I will call maintenance_brief.`);
+        await sleep(700);
+        const b = await runTool("maintenance_brief", { engine_id: id });
+        steps.forEach((li) => li.classList.remove("pulse")); steps[4].classList.add("pulse");
+        const negatives = Object.entries(p.all_models).filter(([, v]) => v < 0).map(([n]) => n);
+        let text = `Engine ${id}: ${p.model} estimates ${p.predicted_rul_cycles} cycles left, so it is in the “${p.life_phase}” phase. ` +
+          `NASA’s recorded value is ${p.nasa_true_rul_cycles} cycles. ${b.recommendation} ${b.caution}`;
+        if (negatives.length) text += ` ${negatives.join(" and ")} predicted a negative life, which is impossible, so I trust the tree-based models here.`;
+        await typeAnswer(text);
+      } else {
+        addMsg("user", "You", "How accurate are your models?");
+        await sleep(600);
+        steps.forEach((li) => li.classList.remove("pulse")); steps[1].classList.add("pulse");
+        addMsg("think", "Agent thinks", "This is about model quality, so I will call compare_models.");
+        await sleep(700);
+        const c = await runTool("compare_models", {});
+        steps.forEach((li) => li.classList.remove("pulse")); steps[4].classList.add("pulse");
+        const best = c.results.reduce((a, b) => (a.RMSE < b.RMSE ? a : b));
+        const worst = c.results.reduce((a, b) => (a.RMSE > b.RMSE ? a : b));
+        await typeAnswer(`On the NASA test set the best model is ${best.Model}: it is off by ${best.MAE.toFixed(1)} cycles on average ` +
+          `(RMSE ${best.RMSE.toFixed(1)}, R² ${best["R²"].toFixed(2)}). The weakest is ${worst.Model} at ${worst.MAE.toFixed(1)} cycles. ` +
+          `Treat every estimate as a prototype, not a maintenance order.`);
+      }
+    } catch (e) {
+      addMsg("answer", "Answer", "The tool call failed. Check that the API is running.");
+    } finally {
+      document.querySelectorAll(".loop li").forEach((li) => li.classList.remove("pulse"));
+      agentBusy = false;
+      $("agent-run").disabled = false;
+    }
+  }
+
   /* ---------- data flow ---------- */
   const fetchJson = (url) => fetch(url).then((r) => { if (!r.ok) throw new Error(url); return r.json(); });
 
@@ -314,6 +412,8 @@
       renderChips(); renderResults();
     });
     $("form").addEventListener("submit", (e) => { e.preventDefault(); predict(); });
+    $("agent-run").addEventListener("click", runAgent);
+    fetchJson("/api/agent/tools").then((t) => { $("tool-schemas").textContent = JSON.stringify(t, null, 2); }).catch(() => {});
 
     // start with the engine that has the longest observed history: the richest charts
     const start = state.engines.reduce((a, b) => (b.features.cycle > a.features.cycle ? b : a));

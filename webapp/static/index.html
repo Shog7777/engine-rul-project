@@ -38,6 +38,15 @@
           <legend>Model shown in the gauge</legend>
           <div id="model-chips" class="chips"></div>
         </fieldset>
+
+        <div class="agents-strip">
+          <span class="agents-label">Built to be called by AI agents</span>
+          <ul class="agent-logos">
+            <li><span class="logo" style="--icon:url(https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/claude.svg)"></span>Claude Code</li>
+            <li><span class="logo" style="--icon:url(https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/openai.svg)"></span>Codex</li>
+            <li><span class="logo" style="--icon:url(https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/googlegemini.svg)"></span>Gemini CLI</li>
+          </ul>
+        </div>
       </div>
 
       <div class="gauge-wrap">
@@ -76,6 +85,48 @@
       <p id="phase-text" class="phase-text"></p>
       <div id="moons" class="moons"></div>
       <p class="hint">Eight phases from a full moon (healthy) to a new moon (end of life), based on the estimate in the gauge. The thresholds are illustrative, not NASA limits.</p>
+    </section>
+
+
+    <section class="panel agent" aria-labelledby="h-agent">
+      <h2 id="h-agent">Let an AI agent run it</h2>
+      <p class="hint agent-intro">The trained models are wrapped as tools. An LLM agent decides when to call them, reads the result and answers in plain language. Any agent that supports tools, such as Claude Code, Codex or Gemini CLI, can connect through MCP.</p>
+
+      <ol class="loop" aria-label="How an agent uses the models">
+        <li><b>You ask</b><span>“Should engine 49 go in for service?”</span></li>
+        <li><b>LLM agent</b><span>Chooses a tool and fills in its arguments</span></li>
+        <li><b>Tool call</b><span><code>predict_rul(engine_id=49)</code> over MCP or HTTP</span></li>
+        <li><b>RUL model</b><span>Gradient Boosting returns cycles left</span></li>
+        <li><b>Answer</b><span>The agent explains it and recommends an action</span></li>
+      </ol>
+
+      <div class="demo">
+        <div class="demo-bar">
+          <label for="agent-prompt" class="sr-only">Question for the demo agent</label>
+          <select id="agent-prompt">
+            <option value="brief">Should this engine go in for maintenance soon?</option>
+            <option value="compare">How accurate are your models?</option>
+          </select>
+          <button id="agent-run" class="btn" type="button">Run the agent</button>
+        </div>
+        <div id="agent-log" class="agent-log" role="log" aria-live="polite">
+          <p class="agent-empty">Press “Run the agent” to watch it call the tools.</p>
+        </div>
+        <p class="hint">Demo agent: every tool call and number is a real request to this API. The wording of the thoughts and the final answer is a template, because no LLM runs inside this page.</p>
+      </div>
+
+      <details class="connect">
+        <summary>Connect a real agent</summary>
+        <p class="hint">From the project root, with the virtual environment active.</p>
+        <p class="snippet-title">Claude Code</p>
+        <pre class="snippet"><code>claude mcp add engine-rul -- python -m webapp.mcp_server</code></pre>
+        <p class="snippet-title">Codex (config.toml)</p>
+        <pre class="snippet"><code>[mcp_servers.engine-rul]
+command = "python"
+args = ["-m", "webapp.mcp_server"]</code></pre>
+        <p class="snippet-title">Tool definitions served by this API</p>
+        <pre id="tool-schemas" class="snippet schema"><code>Loading…</code></pre>
+      </details>
     </section>
 
     <section class="panel" aria-labelledby="h-journey">
@@ -129,7 +180,7 @@
     </section>
 
     <footer class="foot">
-      Educational prototype built on simulated data. Estimates are not maintenance instructions.
+      Educational prototype built on simulated data. Estimates are not maintenance instructions. Claude, OpenAI Codex and Gemini are trademarks of their owners and appear only to name the agents that can connect.
     </footer>
   </main>
 

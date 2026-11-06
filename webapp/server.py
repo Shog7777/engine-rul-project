@@ -4,64 +4,40 @@ Run from the project root with:
     python -m uvicorn webapp.server:app --reload
 then open http://127.0.0.1:8000
 """
-import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from Helper.helper import MODEL_FILES, PROJECT_ROOT, last_cycle_rows, load_cmapss
+from webapp import agent_tools
 
-MODELS_DIR = PROJECT_ROOT / "Models"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+SPARK_SENSORS = ["sensor_11", "sensor_4", "sensor_12", "sensor_7"]
 state = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load the saved pipelines and the example engines once at start-up."""
-    state["models"] = {n: joblib.load(MODELS_DIR / f) for n, f in MODEL_FILES.items()}
-    state["features"] = json.loads((MODELS_DIR / "feature_columns.json").read_text())
-    state["results"] = pd.read_csv(MODELS_DIR / "test_results.csv")
-
-    test_last = last_cycle_rows(load_cmapss(PROJECT_ROOT / "Data/Original/test_FD001.txt"))
-    true_rul = pd.read_csv(
-        PROJECT_ROOT / "Data/Original/RUL_FD001.txt", sep=r"\s+", header=None, names=["RUL"]
-    )["RUL"]
-    state["test_df"] = load_cmapss(PROJECT_ROOT / "Data/Original/test_FD001.txt")
-    state["true_final"] = {int(i + 1): int(v) for i, v in enumerate(true_rul)}
-    cleaned = pd.read_csv(PROJECT_ROOT / "Data/Cleaned/train_FD001_cleaned.csv")
-    lifetimes = cleaned.groupby("engine_id")["cycle"].max()
-    state["dataset"] = {
-        "engines": int(cleaned["engine_id"].nunique()),
-        "readings": int(len(cleaned)),
-        "features": len(state["features"]),
-        "median_life": int(lifetimes.median()),
-        "shortest_life": int(lifetimes.min()),
-        "longest_life": int(lifetimes.max()),
-    }
-    state["engines"] = [
-        {
-            "engine_id": int(row["engine_id"]),
-            "true_rul": int(true_rul.iloc[i]),
-            "features": {f: float(row[f]) for f in state["features"]},
-        }
-        for i, row in test_last.iterrows()
-    ]
+    state.update(agent_tools.get_state())
     yield
     state.clear()
 
 
-app = FastAPI(title="Engine RUL API", version="1.0", lifespan=lifespan)
+app = FastAPI(title="Engine RUL API", version="1.1", lifespan=lifespan)
 
 
 class PredictRequest(BaseModel):
     features: dict[str, float]
+
+
+class ToolCall(BaseModel):
+    name: str
+    arguments: dict = {}
 
 
 @app.get("/api/meta")
@@ -78,9 +54,6 @@ def meta():
 def engines():
     """The 100 NASA test engines (last observed cycle) with their true RUL."""
     return state["engines"]
-
-
-SPARK_SENSORS = ["sensor_11", "sensor_4", "sensor_12", "sensor_7"]
 
 
 @app.get("/api/dataset")
@@ -112,6 +85,19 @@ def trajectory(engine_id: int):
         "predictions": {n: m.predict(frame).tolist() for n, m in state["models"].items()},
         "sensors": {s: rows[s].tolist() for s in SPARK_SENSORS},
     }
+
+
+@app.get("/api/agent/tools")
+def agent_tools_list():
+    """Tool definitions (JSON Schema) that an LLM agent can call."""
+    return agent_tools.TOOL_SCHEMAS
+
+
+@app.post("/api/agent/call")
+def agent_call(call: ToolCall):
+    """Run one tool the way an agent's tool runner would."""
+    return {"tool": call.name, "arguments": call.arguments,
+            "result": agent_tools.call_tool(call.name, call.arguments)}
 
 
 @app.post("/api/predict")
