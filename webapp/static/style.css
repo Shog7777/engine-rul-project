@@ -48,7 +48,7 @@ h1 { margin: 0 0 1rem; font: 600 clamp(2.4rem, 5vw, 3.8rem)/1.02 var(--display);
 
 .controls label { display: block; margin-bottom: 0.4rem; font-weight: 700; color: var(--navy); font-size: 0.9rem; }
 .select-wrap { position: relative; max-width: 22rem; }
-.select-wrap::after { content: ""; position: absolute; right: 1rem; top: 50%; width: 0.5rem; height: 0.5rem; border-right: 2px solid var(--navy); border-bottom: 2px solid var(--navy); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+.select-wrap::after { content: ""; position: absolute; right: 0.9rem; top: 50%; width: 0.8rem; height: 0.5rem; transform: translateY(-50%); pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2312263f' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat; }
 select, input { width: 100%; padding: 0.65rem 0.85rem; color: var(--ink); font: 400 0.95rem var(--mono); background: #fff; border: 1.5px solid var(--line-hi); border-radius: 3px; }
 select { appearance: none; padding-right: 2.5rem; cursor: pointer; }
 select:hover, input:hover { border-color: var(--navy); }
