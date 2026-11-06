@@ -91,6 +91,25 @@
     }
   }
 
+
+  /* ---------- AI agents orbiting the gauge ---------- */
+  function buildOrbit() {
+    if (!window.agentIcons) return;
+    window.agentIcons.then((list) => {
+      const OR = 244, PR = 29;
+      const planets = list.map((a, i) => {
+        const ang = (i / list.length) * 2 * Math.PI - Math.PI / 2 + 0.5;
+        const x = CX + OR * Math.cos(ang), y = CY + OR * Math.sin(ang);
+        return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})">
+          <title>${a.name}</title>
+          <circle class="planet-disc" r="${PR}"/>
+          <g class="planet-logo"><path d="${a.d}" transform="translate(-13 -13) scale(1.08)"/></g></g>`;
+      }).join("");
+      $("gauge").insertAdjacentHTML("afterbegin",
+        `<g class="orbit" aria-hidden="true"><circle class="orbit-track" cx="${CX}" cy="${CY}" r="${OR}"/>${planets}</g>`);
+    });
+  }
+
   /* ---------- moon phases ---------- */
   function moonSvg(lit, uid) {
     const r = 44, c = 50, rx = r * Math.abs(2 * lit - 1);
@@ -392,6 +411,7 @@
   async function init() {
     installSvgDefs();
     drawDial();
+    buildOrbit();
     try {
       const [meta, engines] = await Promise.all([fetchJson("/api/meta"), fetchJson("/api/engines")]);
       Object.assign(state, { features: meta.features, models: meta.models, results: meta.results, engines });

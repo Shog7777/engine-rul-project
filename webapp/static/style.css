@@ -378,3 +378,14 @@ td.best { color: var(--gold-hi); font-weight: 600; }
   .loop li:not(:last-child)::after { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .caret::after { animation: none; } .loop li { transition: none; } }
+
+/* ---------- agents orbiting the gauge ---------- */
+.orbit { transform-origin: 230px 230px; animation: spin 120s linear infinite; }
+.orbit-track { fill: none; stroke: rgba(245, 196, 81, 0.16); stroke-width: 1; stroke-dasharray: 2 7; }
+.planet-disc { fill: rgba(6, 6, 12, 0.9); stroke: var(--gold); stroke-width: 1.5; filter: drop-shadow(0 0 8px rgba(245, 196, 81, 0.55)); }
+.planet-logo { transform-box: fill-box; transform-origin: center; animation: spin-reverse 120s linear infinite; }
+.planet-logo path { fill: var(--gold-hi); }
+.planet-name { fill: var(--gold-hi); font: 500 12px var(--body); text-anchor: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin-reverse { to { transform: rotate(-360deg); } }
+@media (prefers-reduced-motion: reduce) { .orbit, .planet-logo { animation: none; } }

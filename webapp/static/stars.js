@@ -108,6 +108,67 @@
     ctx.fill();
   }
 
+
+  /* ---------- agent glyphs: the logos of Claude, Codex and Gemini drawn as stars ---------- */
+  const ICON_BASE = "https://cdn.jsdelivr.net/npm/simple-icons@13.21.0/icons/";
+  const FALLBACK = "M12 0L14.6 9.4 24 12 14.6 14.6 12 24 9.4 14.6 0 12 9.4 9.4Z";   // plain four-point star
+  const AGENTS = [
+    { id: "claude", name: "Claude Code" },
+    { id: "openai", name: "Codex" },
+    { id: "googlegemini", name: "Gemini CLI" },
+  ];
+  window.agentIcons = Promise.all(AGENTS.map((a) =>
+    fetch(ICON_BASE + a.id + ".svg")
+      .then((r) => (r.ok ? r.text() : Promise.reject()))
+      .then((txt) => new DOMParser().parseFromString(txt, "image/svg+xml").querySelector("path").getAttribute("d"))
+      .catch(() => FALLBACK)
+      .then((d) => ({ ...a, d }))
+  ));
+
+  let agentStars = [];
+  function buildAgentStars(list) {
+    agentStars = [];
+    const per = Math.max(2, Math.round(w / 500));
+    list.forEach((a) => {
+      const path = new Path2D(a.d);
+      for (let i = 0; i < per; i++) {
+        agentStars.push({
+          path, x: Math.random() * w, y: Math.random() * h,
+          size: 15 + Math.random() * 16,
+          phase: Math.random() * TAU, speed: 0.5 + Math.random() * 0.9,
+          drift: 0.01 + Math.random() * 0.02, tilt: (Math.random() - 0.5) * 0.5,
+        });
+      }
+    });
+  }
+  function drawAgentStars(t) {
+    for (const a of agentStars) {
+      if (!reduce) {
+        a.x -= a.drift; a.y += a.drift * 0.35;
+        if (a.x < -40) a.x = w + 40;
+        if (a.y > h + 40) a.y = -40;
+      }
+      const tw = reduce ? 1 : 0.6 + 0.4 * Math.sin(t * a.speed + a.phase);
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(a.tilt);
+      ctx.scale(a.size / 24, a.size / 24);
+      ctx.translate(-12, -12);
+      ctx.globalAlpha = 0.5 + 0.5 * tw;
+      ctx.shadowColor = "rgba(255,214,110,0.95)";
+      ctx.shadowBlur = 16 * (a.size / 24) * 2;
+      ctx.fillStyle = "#ffd978";
+      ctx.fill(a.path);
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 0.35 * tw;
+      ctx.fillStyle = "#fffbe6";
+      ctx.fill(a.path);
+      ctx.restore();
+    }
+  }
+  let agentList = null;
+  window.agentIcons.then((list) => { agentList = list; buildAgentStars(list); if (reduce) frame(0); });
+
   function drawStar(s, t) {
     const tw = reduce ? 1 : 0.55 + 0.45 * Math.sin(t * s.speed + s.phase);
     const alpha = s.a * tw;
@@ -170,6 +231,7 @@
       }
       drawStar(s, t);
     }
+    drawAgentStars(t);
     for (let i = 0; i < comets.length; i++) {
       const c = comets[i];
       if (!reduce) {
@@ -193,7 +255,7 @@
   let resizeTimer;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { seed(); drawPlanet(); if (reduce) frame(0); }, 150);
+    resizeTimer = setTimeout(() => { seed(); if (agentList) buildAgentStars(agentList); drawPlanet(); if (reduce) frame(0); }, 150);
   });
 
   /* ---------- gold ringed planet (drawn once) ---------- */
