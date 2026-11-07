@@ -156,6 +156,8 @@ Cross-validation (5 grouped folds on the training engines, capped target) ranks 
 
 PHM08 is NASA's asymmetric score for this data set: a prediction that is too late is punished harder than one that is too early. Both rows are scored against the real RUL of the test engines.
 
+**Capping the test target too.** Some published work also caps the true RUL of the test engines at 125 before scoring. That gives lower errors for the same predictions (Gradient Boosting: MAE 11.98, RMSE 16.50 instead of 13.05 and 17.72; Random Forest RMSE 17.07 instead of 18.30; the three linear models about 21.4 instead of 22.5) because 11 of the 100 test engines have a real RUL above 125 and capping hides part of their error. The ranking of the models does not change. We score against the real RUL, so our table is the stricter one and is not directly comparable with results that cap the test target.
+
 ### Limitations
 - Predictions saturate near 125 cycles, so an estimate of 125 means "at least 125 cycles left". Engines with a real RUL above 100 are underestimated (about 11 cycles on average for the 34 engines between 100 and 145; the 11 engines above 125 are about 26 cycles too low).
 - Close to failure the model leans late: of the 25 test engines within 30 cycles of failure, 18 are overestimated (the average error of the 25 is +7 cycles, MAE 8.9). That is the risky direction for maintenance.
