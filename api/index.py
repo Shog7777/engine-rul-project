@@ -8,8 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from webapp.data import load_state  # noqa: E402
-from webapp.server import app, state  # noqa: E402
+from webapp.data import load_state
+from webapp.server import app, state  # noqa: F401  (Vercel looks for `app`)
 
 if not state:
     state.update(load_state())
