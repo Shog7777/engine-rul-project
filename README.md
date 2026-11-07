@@ -27,7 +27,7 @@ project/
 ├── Models/             # 4 saved pipelines (.joblib), feature_columns.json, result tables
 ├── Helper/             # helper.py: functions shared by notebooks and app
 ├── Images/             # plots saved by the notebooks
-├── Presentation/       # Engine-RUL-Presentation.pptx (27 slides, dark blueprint style, speaker notes, merges all three parts)
+├── Presentation/       # Engine-RUL-Presentation.pptx (10 slides, about 10 minutes, dark blueprint style, speaker notes, covers all three parts)
 ├── webapp/             # Bonus: FastAPI backend and cockpit-style web interface
 ├── main.py             # Streamlit application
 ├── requirements.txt    # Python libraries with exact versions
@@ -104,7 +104,7 @@ Besides the required Streamlit app, `webapp/` contains a web version of the same
 python -m uvicorn webapp.server:app
 ```
 
-Open http://127.0.0.1:8000. The interface has an instrument-style gauge (teal, orange and red bands), a simplified turbofan section with the sensor positions marked, aircraft line drawings with the predicted remaining life, an engine life-stage panel, a chart of how each model's estimate evolves over the engine's observed cycles, sensor trends, a side-by-side bar chart of the four models (with NASA's true RUL marked), feature importance, dataset facts, editable sensor readings and the test-set metrics. The API is documented automatically at http://127.0.0.1:8000/docs (`GET /api/meta`, `GET /api/engines`, `GET /api/trajectory/{engine_id}`, `GET /api/importance`, `GET /api/dataset`, `POST /api/predict`).
+Open http://127.0.0.1:8000. The interface has an instrument-style gauge (teal, orange and red bands), a simplified turbofan section with the sensor positions marked, aircraft line drawings with the predicted remaining life, an engine life-stage panel, a chart of how each model's estimate evolves over the engine's observed cycles, sensor trends, a side-by-side bar chart of the five models (with NASA's true RUL marked), feature importance, dataset facts, editable sensor readings and the test-set metrics. The API is documented automatically at http://127.0.0.1:8000/docs (`GET /api/meta`, `GET /api/engines`, `GET /api/trajectory/{engine_id}`, `GET /api/importance`, `GET /api/dataset`, `POST /api/predict`).
 
 ## Run the Tests
 
@@ -114,7 +114,7 @@ python -m pytest -q
 python -m ruff check .
 ```
 
-The 14 tests check the data and the cleaned file, the target definition, the saved models and their metrics, and every endpoint of the web API.
+The 20 tests check the data and the cleaned file, the target definition, the saved models and their metrics, and every endpoint of the web API.
 
 ## Work Summary
 
@@ -141,9 +141,9 @@ Official NASA FD001 test set (100 engines), models trained on `min(RUL, 125)`, s
 | Linear Regression | 17.786 | 22.554 | 0.705 |
 | Lasso | 17.789 | 22.556 | 0.705 |
 
-Cross-validation (5 grouped folds on the training engines, capped target) ranks the models the same way: Gradient Boosting RMSE 16.5, Random Forest 16.6, the three linear models 20.1.
+Cross-validation (5 grouped folds on the training engines, capped target) ranks the models the same way: Gradient Boosting RMSE 16.6, Random Forest 16.8, the three linear models 20.1.
 
-**Selected model — Gradient Boosting (tuned: 200 trees, learning rate 0.1, depth 3).** It has the lowest MAE and RMSE and the highest R² on the test set and also won in cross-validation. On average its prediction is 13.0 cycles away from the true RUL. Random Forest is close, and a bootstrap over the 100 test engines gives the Gradient Boosting MAE an interval of roughly 10.7 to 15.4 cycles, so the gap between the two tree models is within the noise. Both tree models are about 21% better in RMSE than the three linear models, which are almost identical (Lasso shrinks none of the 18 coefficients to zero), because the sensor–RUL relationship is non-linear.
+**Selected model — Gradient Boosting (tuned: 200 trees, learning rate 0.1, depth 3).** It has the lowest MAE and RMSE and the highest R² on the test set and also won in cross-validation. On average its prediction is 13.0 cycles away from the true RUL. Random Forest is close, and a bootstrap over the 100 test engines gives the Gradient Boosting MAE an interval of roughly 10.7 to 15.4 cycles, so the gap between the two tree models is within the noise. Gradient Boosting is about 21% and Random Forest about 19% better in RMSE than the three linear models, which are almost identical (Lasso shrinks none of the 18 coefficients to zero), because the sensor–RUL relationship is non-linear.
 
 ![Model comparison](Images/model_comparison.png)
 
@@ -157,8 +157,8 @@ Cross-validation (5 grouped folds on the training engines, capped target) ranks 
 PHM08 is NASA's asymmetric score for this data set: a prediction that is too late is punished harder than one that is too early. Both rows are scored against the real RUL of the test engines.
 
 ### Limitations
-- Predictions saturate near 125 cycles, so an estimate of 125 means "at least 125 cycles left". Engines whose real RUL is above 125 are underestimated (about 11 cycles on average).
-- Close to failure the model leans late: of the 25 test engines within 30 cycles of failure, 18 are overestimated (+7 cycles on average). That is the risky direction for maintenance.
+- Predictions saturate near 125 cycles, so an estimate of 125 means "at least 125 cycles left". Engines with a real RUL above 100 are underestimated (about 11 cycles on average for the 34 engines between 100 and 145; the 11 engines above 125 are about 26 cycles too low).
+- Close to failure the model leans late: of the 25 test engines within 30 cycles of failure, 18 are overestimated (the average error of the 25 is +7 cycles, MAE 8.9). That is the risky direction for maintenance.
 - Each prediction uses a single row (the current readings). Using the recent history of an engine would very likely help further.
 - Only the FD001 subset (one operating condition) was used; FD002–FD004 would need more work.
 - Data is simulated, and the apps are educational prototypes, not maintenance tools.
