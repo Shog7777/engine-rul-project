@@ -7,3 +7,5 @@ Data/Original/*_FD002.txt
 Data/Original/*_FD003.txt
 Data/Original/*_FD004.txt
 Data/Original/train_FD001.txt
+requirements-dev.txt
+README.md
